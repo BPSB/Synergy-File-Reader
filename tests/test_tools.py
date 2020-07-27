@@ -13,3 +13,16 @@ from pytest import mark
 def test_split_well_name(well,row,col):
 	assert split_well_name(well) == (row,col)
 
+@mark.parametrize(
+		"string, seconds",
+		[
+			( "0:00:01",     1),
+			( "0:01:00",    60),
+			( "1:00:00",  3600),
+			( "2:34:56",  9296),
+		]
+	)
+def test_to_seconds(string,seconds):
+	assert to_seconds(string) == seconds
+
+
