@@ -27,27 +27,30 @@ class SynergyRead(object):
 		else:
 			assert len(self.temperatures[channel])==len(self.times)
 	
-	def add_result(self,time,channel,well,value):
+	def add_result(self,time,channel,row,col,value):
 		self.add_time(time)
 		try:
-			self.raw_data[well,channel].append(value)
+			self.raw_data[row,col,channel].append(value)
 		except KeyError:
-			self.raw_data[well,channel] = [value]
+			self.raw_data[row,col,channel] = [value]
 		else:
-			assert len(self.raw_data[well,channel])==len(self.times)
+			assert len(self.raw_data[row,col,channel])==len(self.times)
 	
 	def __getitem__(self,i):
-		if len(i)==3:
-			return self.raw_data[ f"{i[0]}{i[1]}", i[2] ]
+		if len(i)==2:
+			row,col = split_well_name(i[0])
+			channel = i[1]
 		else:
-			return self.raw_data[i]
+			row,col,channel = i
+		
+		return self.raw_data[row,col,channel]
 	
 	def keys():
 		return self.raw_data.keys()
 	
 	@property
 	def rows(self):
-		return 0
+		pass
 	
 	def __repr__(self):
 		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
@@ -118,7 +121,7 @@ class SynergyFile(list):
 	
 	def parse_gain_values(self):
 		pass
-
+	
 	def parse_results(self):
 		pass
 	
@@ -147,7 +150,7 @@ class SynergyFile(list):
 		for time,temperature,*numbers in results:
 			self[-1].add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
-				self[-1].add_result(time,channel,well,number)
+				self[-1].add_result(time,channel,*split_well_name(well),number)
 		
 		self.line_buffer.clear()
 
