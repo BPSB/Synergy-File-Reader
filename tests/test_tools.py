@@ -25,4 +25,30 @@ def test_split_well_name(well,row,col):
 def test_to_seconds(string,seconds):
 	assert to_seconds(string) == seconds
 
+def test_LineBuffer():
+	lb = LineBuffer(["","","a","b","","c","","","d","e","","","f",""])
+	
+	for line in lb:
+		pass
+	assert line==""
+	
+	for _ in range(3):
+		for line,control in zip(lb,["a","b","","c","","","d"]):
+			assert lb
+			assert line==control
+	
+	for line,control in zip(lb,["a","b","","c"]):
+		assert lb
+		assert line==control
+	lb.clear()
+	
+	for line,control in zip(lb,["d","e","","","f"]):
+		assert lb
+		assert line==control
+	lb.clear()
+	
+	assert not lb
+	for line in lb:
+		raise AssertionError
+
 
