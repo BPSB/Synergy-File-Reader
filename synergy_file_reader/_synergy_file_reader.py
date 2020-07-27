@@ -1,7 +1,4 @@
-
-def to_seconds(time):
-	hours, minutes, seconds = map(int,time.split(":"))
-	return (hours*60+minutes)*60+seconds
+from synergy_file_reader.tools import split_well_name, to_seconds, LineBuffer
 
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
@@ -39,29 +36,21 @@ class SynergyRead(object):
 		else:
 			assert len(self.raw_data[well,channel])==len(self.times)
 	
+	def __getitem__(self,i):
+		if len(i)==3:
+			return self.raw_data[ f"{i[0]}{i[1]}", i[2] ]
+		else:
+			return self.raw_data[i]
+	
+	def keys():
+		return self.raw_data.keys()
+	
+	@property
+	def rows(self):
+		return 0
+	
 	def __repr__(self):
 		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
-
-class LineBuffer(object):
-	def __init__(self,lines):
-		self.lines = lines
-		self.pos = 0
-	
-	def clear_empty_lines(self):
-		while self.lines and self.lines[0]=="":
-			self.lines.pop(0)
-	
-	def __iter__(self):
-		self.clear_empty_lines()
-		for self.pos,line in enumerate(self.lines):
-			yield line
-	
-	def clear(self):
-		del self.lines[:self.pos]
-	
-	def __bool__(self):
-		self.clear_empty_lines()
-		return bool(self.lines)
 
 class SynergyFile(list):
 	def __init__(self,filename,encoding="iso-8859-1"):
