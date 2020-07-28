@@ -29,4 +29,9 @@ def test_time_series(filename):
 	assert read.times[-1] == 17*3600+29*60+10
 	assert np.all( np.diff(read.times)==10*60 )
 	
-	
+	temps = read.temperatures["OD:600"]
+	assert len(read.times) == len(temps)
+	assert temps[ 0] == 30.0
+	assert temps[-1] == 30.1
+	assert temps[ 5] == 30.1
+
