@@ -4,7 +4,11 @@ def split_well_name(name):
 	for i,c in enumerate(name):
 		if c.isnumeric():
 			break
-	return name[:i],int(name[i:])
+	col = name[:i]
+	row = int(name[i:])
+	if not col.isalpha():
+		raise ValueError("Not a proper well name")
+	return col,row
 
 def to_seconds(time):
 	hours, minutes, seconds = map(int,time.split(":"))

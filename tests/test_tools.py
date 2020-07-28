@@ -1,5 +1,5 @@
 from synergy_file_reader.tools import split_well_name, to_seconds, LineBuffer
-from pytest import mark
+from pytest import mark, raises
 
 @mark.parametrize(
 		"well, row, col",
@@ -12,6 +12,12 @@ from pytest import mark
 	)
 def test_split_well_name(well,row,col):
 	assert split_well_name(well) == (row,col)
+
+@mark.parametrize("well",["A","1","OD:600"])
+def test_split_bad_well(well):
+	with raises(ValueError):
+		split_well_name(well)
+
 
 @mark.parametrize(
 		"string, seconds",
