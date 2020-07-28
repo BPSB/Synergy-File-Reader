@@ -122,7 +122,7 @@ class SynergyFile(list):
 	def parse_file(self):
 		while self.line_buffer:
 			for parser in (
-					self.parse_raw_data_1,
+					self.parse_raw_data_columnwise_table,
 					self.parse_results,
 					self.parse_procedure,
 					self.parse_metadata,
@@ -178,7 +178,7 @@ class SynergyFile(list):
 				break
 		self.line_buffer.clear()
 	
-	def parse_raw_data_1(self):
+	def parse_raw_data_columnwise_table(self):
 		line_iter = iter(self.line_buffer)
 		channel = next(line_iter)
 		if "\t" in channel or next(line_iter)!="":
