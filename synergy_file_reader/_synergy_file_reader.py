@@ -1,4 +1,5 @@
-from synergy_file_reader.tools import split_well_name, to_seconds, LineBuffer
+from synergy_file_reader.tools import split_well_name, to_seconds, parse_number, LineBuffer
+from math import isnan
 
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
@@ -45,7 +46,7 @@ class SynergyRead(object):
 		
 		return self.raw_data[row,col,channel]
 	
-	def keys():
+	def keys(self):
 		return self.raw_data.keys()
 	
 	@property
@@ -69,6 +70,7 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_1,
+					self.parse_results,
 					self.parse_procedure,
 					self.parse_metadata,
 				):
@@ -123,7 +125,14 @@ class SynergyFile(list):
 		pass
 	
 	def parse_results(self):
-		pass
+		line_iter = iter(self.line_buffer)
+		if next(line_iter)!="Results":
+			raise FormatMismatch
+		for line in line_iter:
+			# TODO
+			if line=="":
+				break
+		self.line_buffer.clear()
 	
 	def parse_raw_data_1(self):
 		line_iter = iter(self.line_buffer)
@@ -138,16 +147,21 @@ class SynergyFile(list):
 		
 		results = []
 		while line:=next(line_iter):
+			if line=="":
+				break
+			
 			time,temperature,*numbers = line.split("\t")
 			if len(numbers)!=len(wells):
 				raise FormatMismatch
 			try:
-				result = to_seconds(time),float(temperature),*map(float,numbers)
+				result = to_seconds(time),parse_number(temperature),*map(parse_number,numbers)
 			except ValueError:
 				raise FormatMismatch
 			results.append(result)
 		
 		for time,temperature,*numbers in results:
+			if time==0 and all(isnan(number) for number in numbers):
+				continue
 			self[-1].add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
 				self[-1].add_result(time,channel,*split_well_name(well),number)
