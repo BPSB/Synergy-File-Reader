@@ -1,4 +1,4 @@
-from synergy_file_reader.tools import split_well_name, to_seconds, LineBuffer
+from synergy_file_reader.tools import split_well_name, to_seconds, LineBuffer, extract_channel
 from pytest import mark, raises
 
 @mark.parametrize(
@@ -18,6 +18,21 @@ def test_split_bad_well(well):
 	with raises(ValueError):
 		split_well_name(well)
 
+@mark.parametrize(
+		"string, name, channel",
+		[
+			( "Max V [OD:600]" , "Max V"     , "OD:600" ),
+			( "Lagtime [YFP]"  , "Lagtime"   , "YFP"    ),
+			( "R-Squared [CFP]", "R-Squared" , "CFP"    ),
+		]
+	)
+def test_extract_channel(string,name,channel):
+	assert extract_channel(string) == (name,channel)
+
+@mark.parametrize("string",["Max V [OD:600"])
+def test_extract_bad_channel(string):
+	with raises(ValueError):
+		extract_channel(string)
 
 @mark.parametrize(
 		"string, seconds",

@@ -10,6 +10,14 @@ def split_well_name(name):
 		raise ValueError("Not a proper well name")
 	return col,row
 
+def extract_channel(string):
+	name,_,channel = string.partition("[")
+	if channel[-1] != "]":
+		raise ValueError
+	channel = channel[:-1]
+	name = name.rstrip()
+	return name,channel
+
 def to_seconds(time):
 	hours, minutes, seconds = map(int,time.split(":"))
 	return (hours*60+minutes)*60 + seconds
