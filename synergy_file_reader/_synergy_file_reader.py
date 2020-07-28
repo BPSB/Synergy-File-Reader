@@ -1,5 +1,6 @@
 from synergy_file_reader.tools import split_well_name, to_seconds, parse_number, LineBuffer
 from math import isnan
+from datetime import datetime
 
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
@@ -36,6 +37,23 @@ class SynergyRead(object):
 			self.raw_data[row,col,channel] = [value]
 		else:
 			assert len(self.raw_data[row,col,channel])==len(self.times)
+	
+	def add_metadata(self,**metadata):
+		if any( key in self.metadata for key in metadata ):
+			raise RepeatingData
+		
+		if "Date" in metadata:
+			assert "Time" in metadata
+			self.metadata["datetime"] = datetime.strptime(
+				metadata.pop("Date") + " " + metadata.pop("Time"),
+				"%m/%d/%Y %I:%M:%S %p"
+			)
+
+		for key,value in metadata.items():
+			if key=="Software Version":
+				value = tuple( int(x) for x in value.split(".") )
+			
+			self.metadata[key] = value
 	
 	def __getitem__(self,i):
 		if len(i)==2:
@@ -97,18 +115,8 @@ class SynergyFile(list):
 					key = key[:-1]
 				new_metadata[key] = value
 		
-		self.add_metadata(**new_metadata)
+		self[-1].add_metadata(**new_metadata)
 		self.line_buffer.clear()
-	
-	def add_metadata(self,**metadata):
-		if any( key in self[-1].metadata for key in metadata ):
-			raise RepeatingData
-		
-		for key,value in metadata.items():
-			if key=="Software Version":
-				value = tuple( int(x) for x in value.split(".") )
-			
-			self[-1].metadata[key] = value
 	
 	def parse_procedure(self):
 		line_iter = iter(self.line_buffer)
@@ -118,7 +126,7 @@ class SynergyFile(list):
 		procedure = []
 		while line:=next(line_iter):
 			procedure.append(line)
-		self.add_metadata( procedure = "\n".join(procedure) )
+		self[-1].add_metadata( procedure = "\n".join(procedure) )
 		self.line_buffer.clear()
 	
 	def parse_gain_values(self):

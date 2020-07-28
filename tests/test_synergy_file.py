@@ -1,4 +1,5 @@
 from synergy_file_reader import SynergyFile
+from datetime import datetime
 from pytest import mark
 from os import path
 
@@ -15,5 +16,7 @@ def test_time_series(filename):
 	assert read.metadata["Reader Type"] == "Synergy H1"
 	assert read.metadata["Reading Type"] == "Reader"
 	assert read.metadata["procedure"] == "foo\nbar\nquz"
+
+	assert read.metadata["datetime"] == datetime(2020,7,23,17,40,7)
 
 
