@@ -5,13 +5,9 @@ from datetime import datetime
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
 
-class SynergyRead(object):
+class SynergyResult(object):
 	def __init__(self):
-		self.metadata = {}
-		self.raw_data = {}
-		self.times = []
-		self.temperatures = {}
-		
+		self.data = {}
 		self.rows = []
 		self.cols = []
 		self.channels = []
@@ -32,6 +28,58 @@ class SynergyRead(object):
 		if channel not in self.channels:
 			self.channels.append(channel)
 	
+	def keys(self):
+		return self.data.keys()
+	
+	def convert_index(self,index):
+		# Avoid string as single index being interpreted as iterable:
+		if isinstance(index,str):
+			index = [index]
+		else:
+			index = list(index)
+		
+		try:
+			row,col = split_well_name(index[0])
+			del index[0]
+		except ValueError:
+			row,col = index[:2]
+			del index[:2]
+		
+		row = row.upper()
+		
+		if len(index)==0:
+			if len(self.channels)==1:
+				channel = self.channels[0]
+			else:
+				raise ValueError("You must specify a channel as there is more than one in this read.")
+		elif len(index)==1:
+			channel = index[0]
+		else:
+			raise KeyError("Too many indices.")
+		
+		return row,col,channel
+
+	def __setitem__(self,index,result):
+		row,col,channel = self.convert_index(index)
+		self.add_row(row)
+		self.add_col(col)
+		self.add_channel(channel)
+		if (row,col,channel) in self.keys():
+			raise RepeatingData
+		else:
+			self.data[row,col,channel] = result
+	
+	def __getitem__(self,index):
+		return self.data[self.convert_index(index)]
+
+
+class SynergyRead(SynergyResult):
+	def __init__(self):
+		super().__init__()
+		self.metadata = {}
+		self.times = []
+		self.temperatures = {}
+	
 	def add_time(self,time):
 		if self.times:
 			if time != self.times[-1]:
@@ -50,17 +98,13 @@ class SynergyRead(object):
 		else:
 			assert len(self.temperatures[channel])==len(self.times)
 	
-	def add_result(self,time,channel,row,col,value):
+	def add_raw_result(self,time,channel,row,col,value):
 		self.add_time(time)
-		self.add_row(row)
-		self.add_col(col)
-		self.add_channel(channel)
-		try:
-			self.raw_data[row,col,channel].append(value)
-		except KeyError:
-			self.raw_data[row,col,channel] = [value]
+		if (row,col,channel) in self.keys():
+			self[row,col,channel].append(value)
+			assert len(self[row,col,channel])==len(self.times)
 		else:
-			assert len(self.raw_data[row,col,channel])==len(self.times)
+			self[row,col,channel] = [value]
 	
 	def add_metadata(self,**metadata):
 		if any( key in self.metadata for key in metadata ):
@@ -78,33 +122,6 @@ class SynergyRead(object):
 				value = tuple( int(x) for x in value.split(".") )
 			
 			self.metadata[key] = value
-	
-	def __getitem__(self,i):
-		# Avoid string as single index being interpreted as iterable:
-		if isinstance(i,str):
-			i = [i]
-		else:
-			i = list(i)
-		
-		if i[-1] in self.channels:
-			channel = i.pop()
-		else:
-			if len(self.channels)==1:
-				channel = self.channels[0]
-			else:
-				raise ValueError("You must specify a channel as there is more than one in this read.")
-		
-		if len(i)==1:
-			row,col = split_well_name(i[0])
-		else:
-			row,col = i
-		
-		row = row.upper()
-		
-		return self.raw_data[row,col,channel]
-	
-	def keys(self):
-		return self.raw_data.keys()
 	
 	# def __repr__(self):
 	# 	return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
@@ -205,7 +222,7 @@ class SynergyFile(list):
 				continue
 			self[-1].add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
-				self[-1].add_result(time,channel,*split_well_name(well),number)
+				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
 		
 		self.line_buffer.clear()
 
