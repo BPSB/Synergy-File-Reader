@@ -80,13 +80,19 @@ class SynergyRead(object):
 			self.metadata[key] = value
 	
 	def __getitem__(self,i):
+		if i[-1] not in self.channels:
+			if len(self.channels)==1:
+				i = [ *i, self.channels[0] ]
+			else:
+				raise ValueError("You must specify a channel as there is more than one in the read.")
+		
 		if len(i)==2:
 			row,col = split_well_name(i[0])
 			channel = i[1]
 		else:
 			row,col,channel = i
 		
-		row = row.uppper()
+		row = row.upper()
 		
 		return self.raw_data[row,col,channel]
 	

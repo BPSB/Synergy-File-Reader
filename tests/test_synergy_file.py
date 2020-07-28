@@ -34,4 +34,9 @@ def test_time_series(filename):
 	assert temps[ 0] == 30.0
 	assert temps[-1] == 30.1
 	assert temps[ 5] == 30.1
+	
+	assert read["B4","OD:600"][2] == 0.084
+	assert read["B",4,"OD:600"][2] == 0.084
+	assert read["B",4][2] == 0.084
+	
 
