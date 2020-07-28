@@ -83,18 +83,21 @@ class SynergyRead(object):
 		# Avoid string as single index being interpreted as iterable:
 		if isinstance(i,str):
 			i = [i]
+		else:
+			i = list(i)
 		
-		if i[-1] not in self.channels:
+		if i[-1] in self.channels:
+			channel = i.pop()
+		else:
 			if len(self.channels)==1:
-				i = [ *i, self.channels[0] ]
+				channel = self.channels[0]
 			else:
 				raise ValueError("You must specify a channel as there is more than one in this read.")
 		
-		if len(i)==2:
+		if len(i)==1:
 			row,col = split_well_name(i[0])
-			channel = i[1]
 		else:
-			row,col,channel = i
+			row,col = i
 		
 		row = row.upper()
 		
