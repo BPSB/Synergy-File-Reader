@@ -165,6 +165,7 @@ class SynergyFile(list):
 		self.line_buffer.clear()
 	
 	def parse_gain_values(self):
+		# TODO
 		pass
 	
 	def parse_results(self):
@@ -190,9 +191,6 @@ class SynergyFile(list):
 		
 		results = []
 		while line:=next(line_iter):
-			if line=="":
-				break
-			
 			time,temperature,*numbers = line.split("\t")
 			if len(numbers)!=len(wells):
 				raise FormatMismatch
