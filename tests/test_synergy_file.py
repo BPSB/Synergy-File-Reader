@@ -2,6 +2,7 @@ from synergy_file_reader import SynergyFile
 from datetime import datetime
 from pytest import mark
 from os import path
+import numpy as np
 
 @mark.parametrize("filename",["columnwise_table.txt"])
 def test_time_series(filename):
@@ -24,4 +25,8 @@ def test_time_series(filename):
 	assert read.rows == list("ABCDEFGH")
 	assert read.cols == list(range(1,13))
 	
-
+	assert read.times[0] == 9*60+10
+	assert read.times[-1] == 17*3600+29*60+10
+	assert np.all( np.diff(read.times)==10*60 )
+	
+	
