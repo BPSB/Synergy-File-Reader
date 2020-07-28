@@ -11,6 +11,26 @@ class SynergyRead(object):
 		self.raw_data = {}
 		self.times = []
 		self.temperatures = {}
+		
+		self.rows = []
+		self.cols = []
+		self.channels = []
+	
+	def add_row(self,row):
+		if row not in self.rows:
+			if self.rows:
+				assert len(row)>len(self.rows[-1]) or row>self.rows[-1]
+			self.rows.append(row)
+	
+	def add_col(self,col):
+		if col not in self.cols:
+			if self.cols:
+				assert col > self.cols[-1]
+			self.cols.append(col)
+	
+	def add_channel(self,channel):
+		if channel not in self.channels:
+			self.channels.append(channel)
 	
 	def add_time(self,time):
 		if self.times:
@@ -22,6 +42,7 @@ class SynergyRead(object):
 	
 	def add_temperature(self,time,channel,temperature):
 		self.add_time(time)
+		self.add_channel(channel)
 		try:
 			self.temperatures[channel].append(temperature)
 		except KeyError:
@@ -31,6 +52,9 @@ class SynergyRead(object):
 	
 	def add_result(self,time,channel,row,col,value):
 		self.add_time(time)
+		self.add_row(row)
+		self.add_col(col)
+		self.add_channel(channel)
 		try:
 			self.raw_data[row,col,channel].append(value)
 		except KeyError:
@@ -48,7 +72,7 @@ class SynergyRead(object):
 				metadata.pop("Date") + " " + metadata.pop("Time"),
 				"%m/%d/%Y %I:%M:%S %p"
 			)
-
+		
 		for key,value in metadata.items():
 			if key=="Software Version":
 				value = tuple( int(x) for x in value.split(".") )
@@ -62,17 +86,15 @@ class SynergyRead(object):
 		else:
 			row,col,channel = i
 		
+		row = row.uppper()
+		
 		return self.raw_data[row,col,channel]
 	
 	def keys(self):
 		return self.raw_data.keys()
 	
-	@property
-	def rows(self):
-		pass
-	
-	def __repr__(self):
-		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
+	# def __repr__(self):
+	# 	return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
 
 class SynergyFile(list):
 	def __init__(self,filename,encoding="iso-8859-1"):

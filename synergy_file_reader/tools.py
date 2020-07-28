@@ -31,8 +31,6 @@ class LineBuffer(object):
 			yield line
 	
 	def clear(self):
-		for line in self.lines[:self.pos]:
-			print(line)
 		del self.lines[:self.pos]
 	
 	def __bool__(self):
