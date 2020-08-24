@@ -1,9 +1,15 @@
-from synergy_file_reader.tools import split_well_name, to_seconds, parse_number, LineBuffer
+from synergy_file_reader.tools import split_well_name, extract_channel, parse_time, parse_number, LineBuffer
 from math import isnan
 from datetime import datetime
 
+format_parsers = [parse_time, parse_number]
+
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
+
+def format_assert(condition):
+	if not condition:
+		raise FormatMismatch
 
 class SynergyResult(object):
 	def __init__(self):
@@ -11,6 +17,7 @@ class SynergyResult(object):
 		self.rows = []
 		self.cols = []
 		self.channels = []
+		self.results = []
 	
 	def add_row(self,row):
 		if row not in self.rows:
@@ -79,6 +86,7 @@ class SynergyRead(SynergyResult):
 		self.metadata = {}
 		self.times = []
 		self.temperatures = {}
+		self.results = {}
 	
 	def add_time(self,time):
 		if self.times:
@@ -105,6 +113,12 @@ class SynergyRead(SynergyResult):
 			assert len(self[row,col,channel])==len(self.times)
 		else:
 			self[row,col,channel] = [value]
+	
+	def add_result(self,name,channel,row,col,value):
+		if name not in self.results:
+			self.results[name] = SynergyResult()
+		
+		self.results[name][row,col,channel] = value
 	
 	def add_metadata(self,**metadata):
 		if any( key in self.metadata for key in metadata ):
@@ -140,7 +154,7 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_columnwise_table,
-					self.parse_results,
+					self.parse_results_matrix,
 					self.parse_procedure,
 					self.parse_metadata,
 				):
@@ -185,14 +199,46 @@ class SynergyFile(list):
 		# TODO
 		pass
 	
-	def parse_results(self):
+	def parse_results_matrix(self):
 		line_iter = iter(self.line_buffer)
-		if next(line_iter)!="Results":
+		
+		format_assert(next(line_iter)=="Results")
+		
+		try:
+			cols = [int(c) for c in next(line_iter).split("\t")[1:]]
+		except ValueError:
 			raise FormatMismatch
+		format_assert( cols==list(range(1,len(cols)+1)) )
+		
+		results = []
+		row = None
 		for line in line_iter:
-			# TODO
 			if line=="":
 				break
+			new_row,*numbers,name = line.split("\t")
+			
+			if new_row.isupper() and new_row.isalpha():
+				row = new_row
+			else:
+				format_assert(new_row=="")
+			format_assert(row is not None)
+			
+			for format_parser in format_parsers:
+				try:
+					numbers = [format_parser(number) for number in numbers]
+				except ValueError:
+					continue
+				else:
+					break
+			else:
+				raise FormatMismatch
+			
+			results.append((row,numbers,*extract_channel(name)))
+		
+		for row,numbers,key,channel in results:
+			for col,number in zip(cols,numbers):
+				self[-1].add_result(key,channel,row,col,number)
+		
 		self.line_buffer.clear()
 	
 	def parse_raw_data_columnwise_table(self):
@@ -212,7 +258,7 @@ class SynergyFile(list):
 			if len(numbers)!=len(wells):
 				raise FormatMismatch
 			try:
-				result = to_seconds(time),parse_number(temperature),*map(parse_number,numbers)
+				result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
 			except ValueError:
 				raise FormatMismatch
 			results.append(result)

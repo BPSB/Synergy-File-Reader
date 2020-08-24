@@ -44,4 +44,7 @@ def test_time_series(filename):
 	assert read["A1" ][ 0] == 0.093
 	assert read["H12"][-1] == 0.099
 	
+	assert read.results["Max V"]["D",2,"OD:600"] == -0.060
+	assert read.results["t at Max V"]["H11","OD:600"] == 5050
+	assert read.results["t at Max V"]["H11"] == 5050
 
