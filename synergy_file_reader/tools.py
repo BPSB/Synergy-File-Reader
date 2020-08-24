@@ -18,7 +18,7 @@ def extract_channel(string):
 	name = name.rstrip()
 	return name,channel
 
-def to_seconds(time):
+def parse_time(time):
 	hours, minutes, seconds = map(int,time.split(":"))
 	return (hours*60+minutes)*60 + seconds
 
