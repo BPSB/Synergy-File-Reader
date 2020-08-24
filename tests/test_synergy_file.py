@@ -4,7 +4,7 @@ from pytest import mark
 from os import path
 import numpy as np
 
-@mark.parametrize("filename",["columnwise_table.txt"])
+@mark.parametrize("filename",["columnwise_table_matrix.txt"])
 def test_time_series(filename):
 	data = SynergyFile(path.join("time_series",filename))
 	assert len(data)==1
