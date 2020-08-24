@@ -154,6 +154,7 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_columnwise_table,
+					self.parse_results_columnwise_table,
 					self.parse_results_rowwise_table,
 					self.parse_results_matrix,
 					self.parse_procedure,
@@ -286,6 +287,51 @@ class SynergyFile(list):
 			
 		for row,col,number,key,channel in results:
 			self[-1].add_result(key,channel,row,col,number)
+		
+		self.line_buffer.clear()
+	
+	def parse_results_columnwise_table(self):
+		line_iter = iter(self.line_buffer)
+		
+		format_assert(next(line_iter)=="Results")
+		format_assert(next(line_iter)=="")
+		
+		cols = next(line_iter).rstrip("\t").split("\t")
+		format_assert( cols[0]=="Well" )
+		
+		try:
+			wells = [ split_well_name(col) for col in cols[1:] ]
+		except ValueError:
+			raise FormatMismatch
+		
+		results = []
+		for line in line_iter:
+			if line=="":
+				break
+			name,*numbers = line.rstrip("\t").split("\t")
+			
+			try:
+				key,channel = extract_channel(name)
+			except ValueError:
+				raise FormatMismatch
+			
+			format_assert( len(wells)==len(numbers) )
+			
+			for format_parser in format_parsers:
+				try:
+					numbers = [format_parser(number) for number in numbers]
+				except ValueError:
+					continue
+				else:
+					break
+			else:
+				raise FormatMismatch
+			
+			results.append((key,channel,numbers))
+			
+		for key,channel,numbers in results:
+			for (row,col),number in zip(wells,numbers):
+				self[-1].add_result(key,channel,row,col,number)
 		
 		self.line_buffer.clear()
 	

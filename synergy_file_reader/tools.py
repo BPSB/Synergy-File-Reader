@@ -1,13 +1,18 @@
 from math import nan
 
 def split_well_name(name):
+	if name=="":
+		raise ValueError("Not a proper well name")
+	
 	for i,c in enumerate(name):
 		if c.isnumeric():
 			break
 	col = name[:i]
 	row = int(name[i:])
+	
 	if not col.isalpha():
 		raise ValueError("Not a proper well name")
+	
 	return col,row
 
 def extract_channel(string):
