@@ -164,6 +164,8 @@ class SynergyFile(list):
 					continue
 				else:
 					break
+			else:
+				raise ValueError("File does not appear to have a valid or implemented format.")
 	
 	def new_read(self):
 		self.append(SynergyRead())
