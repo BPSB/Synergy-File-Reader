@@ -213,19 +213,24 @@ class SynergyFile(list):
 	
 	def parse_metadata(self):
 		new_metadata = {}
-		for line in self.line_buffer:
-			if line == "":
-				break
-			elif line.count("\t") != 1:
-				raise FormatMismatch
-			else:
-				key,_,value = line.partition("\t")
-				if key.endswith(":"):
-					key = key[:-1]
-				new_metadata[key] = value
+		
+		with self.line_buffer as line_iter:
+			# looping over lines here (instead doing one at a time) to:
+			# • get time and date together
+			# • raise RepeatingData as early as possible
+			
+			for line in line_iter:
+				if line == "":
+					break
+				elif line.count("\t") != 1:
+					raise FormatMismatch
+				else:
+					key,_,value = line.partition("\t")
+					if key.endswith(":"):
+						key = key[:-1]
+					new_metadata[key] = value
 		
 		self[-1].add_metadata(**new_metadata)
-		self.line_buffer.clear()
 	
 	def parse_procedure(self):
 		with self.line_buffer as line_iter:
