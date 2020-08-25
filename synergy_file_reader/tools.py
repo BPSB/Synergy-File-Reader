@@ -53,4 +53,10 @@ class LineBuffer(object):
 	def __bool__(self):
 		self.clear_empty_lines()
 		return bool(self.lines)
-
+	
+	def __enter__(self):
+		return iter(self)
+	
+	def __exit__(self, exc_type, exc_value, exc_traceback):
+		if exc_type is None:
+			self.clear()

@@ -228,151 +228,138 @@ class SynergyFile(list):
 		self.line_buffer.clear()
 	
 	def parse_procedure(self):
-		line_iter = iter(self.line_buffer)
-		if next(line_iter)!="Procedure Details" or next(line_iter)!="":
-			raise FormatMismatch
-		
-		procedure = []
-		while line:=next(line_iter):
-			procedure.append(line)
-		self[-1].add_metadata( procedure = "\n".join(procedure) )
-		self.line_buffer.clear()
+		with self.line_buffer as line_iter:
+			if next(line_iter)!="Procedure Details" or next(line_iter)!="":
+				raise FormatMismatch
+			
+			procedure = []
+			while line:=next(line_iter):
+				procedure.append(line)
+			self[-1].add_metadata( procedure = "\n".join(procedure) )
 	
 	def parse_gain_values(self):
 		# TODO
 		pass
 	
 	def parse_results_matrix(self):
-		line_iter = iter(self.line_buffer)
-		
-		format_assert(next(line_iter)=="Results")
-		
-		with ValueError_to_FormatMismatch():
-			cols = [int(c) for c in next(line_iter).split("\t")[1:]]
-		format_assert( cols==list(range(1,len(cols)+1)) )
-		
-		results = []
-		row = None
-		for line in line_iter:
-			if line=="":
-				break
-			new_row,*numbers,name = line.split("\t")
-			
-			if new_row:
-				format_assert(new_row.isupper())
-				format_assert(new_row.isalpha())
-				row = new_row
-			format_assert(row is not None)
-			
-			for attempt in TryFormats():
-				with attempt as format_parser:
-					numbers = [format_parser(number) for number in numbers]
-			
-			results.append((row,numbers,*extract_channel(name)))
-		
-		for row,numbers,key,channel in results:
-			for col,number in zip(cols,numbers):
-				self[-1].add_result(key,channel,row,col,number)
-		
-		self.line_buffer.clear()
-	
-	def parse_results_rowwise_table(self):
-		line_iter = iter(self.line_buffer)
-		
-		format_assert( next(line_iter)=="Results" )
-		format_assert( next(line_iter)=="" )
-		
-		cols = next(line_iter).split("\t")
-		format_assert( cols[0]=="Well" )
-		
-		with ValueError_to_FormatMismatch():
-			fields = [ extract_channel(col) for col in cols[1:] ]
-		
-		results = []
-		for line in line_iter:
-			if line=="":
-				break
-			well,*numbers = line.split("\t")
+		with self.line_buffer as line_iter:
+			format_assert(next(line_iter)=="Results")
 			
 			with ValueError_to_FormatMismatch():
-				row,col = split_well_name(well)
+				cols = [int(c) for c in next(line_iter).split("\t")[1:]]
+			format_assert( cols==list(range(1,len(cols)+1)) )
 			
-			format_assert( len(fields)==len(numbers) )
-			
-			for (key,channel),number in zip(fields,numbers):
+			results = []
+			row = None
+			for line in line_iter:
+				if line=="":
+					break
+				new_row,*numbers,name = line.split("\t")
+				
+				if new_row:
+					format_assert(new_row.isupper())
+					format_assert(new_row.isalpha())
+					row = new_row
+				format_assert(row is not None)
+				
 				for attempt in TryFormats():
 					with attempt as format_parser:
-						number = format_parser(number)
+						numbers = [format_parser(number) for number in numbers]
 				
-				results.append((row,col,number,key,channel))
+				results.append((row,numbers,*extract_channel(name)))
 			
-		for row,col,number,key,channel in results:
-			self[-1].add_result(key,channel,row,col,number)
-		
-		self.line_buffer.clear()
+			for row,numbers,key,channel in results:
+				for col,number in zip(cols,numbers):
+					self[-1].add_result(key,channel,row,col,number)
+	
+	def parse_results_rowwise_table(self):
+		with self.line_buffer as line_iter:
+			format_assert( next(line_iter)=="Results" )
+			format_assert( next(line_iter)=="" )
+			
+			cols = next(line_iter).split("\t")
+			format_assert( cols[0]=="Well" )
+			
+			with ValueError_to_FormatMismatch():
+				fields = [ extract_channel(col) for col in cols[1:] ]
+			
+			results = []
+			for line in line_iter:
+				if line=="":
+					break
+				well,*numbers = line.split("\t")
+				
+				with ValueError_to_FormatMismatch():
+					row,col = split_well_name(well)
+				
+				format_assert( len(fields)==len(numbers) )
+				
+				for (key,channel),number in zip(fields,numbers):
+					for attempt in TryFormats():
+						with attempt as format_parser:
+							number = format_parser(number)
+					
+					results.append((row,col,number,key,channel))
+			
+			for row,col,number,key,channel in results:
+				self[-1].add_result(key,channel,row,col,number)
 	
 	def parse_results_columnwise_table(self):
-		line_iter = iter(self.line_buffer)
-		
-		format_assert( next(line_iter)=="Results" )
-		format_assert( next(line_iter)=="" )
-		
-		cols = next(line_iter).rstrip("\t").split("\t")
-		format_assert( cols[0]=="Well" )
-		
-		with ValueError_to_FormatMismatch():
-			wells = [ split_well_name(col) for col in cols[1:] ]
-		
-		results = []
-		for line in line_iter:
-			if line=="":
-				break
-			name,*numbers = line.rstrip("\t").split("\t")
+		with self.line_buffer as line_iter:
+			format_assert( next(line_iter)=="Results" )
+			format_assert( next(line_iter)=="" )
+			
+			cols = next(line_iter).rstrip("\t").split("\t")
+			format_assert( cols[0]=="Well" )
 			
 			with ValueError_to_FormatMismatch():
-				key,channel = extract_channel(name)
+				wells = [ split_well_name(col) for col in cols[1:] ]
 			
-			format_assert( len(wells)==len(numbers) )
-			
-			for attempt in TryFormats():
-				with attempt as format_parser:
-					numbers = [format_parser(number) for number in numbers]
-			
-			results.append((key,channel,numbers))
-			
-		for key,channel,numbers in results:
-			for (row,col),number in zip(wells,numbers):
-				self[-1].add_result(key,channel,row,col,number)
-		
-		self.line_buffer.clear()
+			results = []
+			for line in line_iter:
+				if line=="":
+					break
+				name,*numbers = line.rstrip("\t").split("\t")
+				
+				with ValueError_to_FormatMismatch():
+					key,channel = extract_channel(name)
+				
+				format_assert( len(wells)==len(numbers) )
+				
+				for attempt in TryFormats():
+					with attempt as format_parser:
+						numbers = [format_parser(number) for number in numbers]
+				
+				results.append((key,channel,numbers))
+				
+			for key,channel,numbers in results:
+				for (row,col),number in zip(wells,numbers):
+					self[-1].add_result(key,channel,row,col,number)
 	
 	def parse_raw_data_columnwise_table(self):
-		line_iter = iter(self.line_buffer)
-		channel = next(line_iter)
-		format_assert( "\t" not in channel )
-		format_assert( next(line_iter) == "" )
-		
-		fields = next(line_iter).split("\t")
-		format_assert( len(fields) >= 3 )
-		format_assert( fields[0] == "Time" )
-		format_assert( fields[1] == "T° "+channel )
-		wells = fields[2:]
-		
-		results = []
-		while line:=next(line_iter):
-			time,temperature,*numbers = line.split("\t")
-			format_assert( len(numbers) == len(wells) )
-			with ValueError_to_FormatMismatch():
-				result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
-			results.append(result)
-		
-		for time,temperature,*numbers in results:
-			if time==0 and all(isnan(number) for number in numbers):
-				continue
-			self[-1].add_temperature(time,channel,temperature)
-			for well,number in zip(wells,numbers):
-				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
-		
-		self.line_buffer.clear()
-
+		with self.line_buffer as line_iter:
+			channel = next(line_iter)
+			format_assert( "\t" not in channel )
+			format_assert( next(line_iter) == "" )
+			
+			fields = next(line_iter).split("\t")
+			format_assert( len(fields) >= 3 )
+			format_assert( fields[0] == "Time" )
+			format_assert( fields[1] == "T° "+channel )
+			wells = fields[2:]
+			
+			results = []
+			while line:=next(line_iter):
+				time,temperature,*numbers = line.split("\t")
+				format_assert( len(numbers) == len(wells) )
+				with ValueError_to_FormatMismatch():
+					result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
+				results.append(result)
+			
+			for time,temperature,*numbers in results:
+				if time==0 and all(isnan(number) for number in numbers):
+					continue
+				self[-1].add_temperature(time,channel,temperature)
+				for well,number in zip(wells,numbers):
+					self[-1].add_raw_result(time,channel,*split_well_name(well),number)
 

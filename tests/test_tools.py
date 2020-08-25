@@ -58,10 +58,17 @@ def test_LineBuffer():
 			assert lb
 			assert line==control
 	
-	for line,control in zip(lb,["a","b","","c"]):
-		assert lb
-		assert line==control
-	lb.clear()
+	with raises(ValueError):
+		with lb as lb_iter:
+			for line,control in zip(lb_iter,["a","b","","c"]):
+				assert lb
+				assert line==control
+			raise ValueError
+	
+	with lb as lb_iter:
+		for line,control in zip(lb_iter,["a","b","","c"]):
+			assert lb
+			assert line==control
 	
 	for line,control in zip(lb,["d","e","","","f"]):
 		assert lb
