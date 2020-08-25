@@ -29,7 +29,7 @@ def test_split_bad_well(well):
 def test_extract_channel(string,name,channel):
 	assert extract_channel(string) == (name,channel)
 
-@mark.parametrize("string",["Max V [OD:600"])
+@mark.parametrize("string",["Max V [OD:600","abc"])
 def test_extract_bad_channel(string):
 	with raises(ValueError):
 		extract_channel(string)

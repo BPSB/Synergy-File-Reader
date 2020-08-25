@@ -17,7 +17,7 @@ def split_well_name(name):
 
 def extract_channel(string):
 	name,_,channel = string.partition("[")
-	if channel[-1] != "]":
+	if not channel or channel[-1] != "]":
 		raise ValueError
 	channel = channel[:-1]
 	name = name.rstrip()

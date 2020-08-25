@@ -165,8 +165,8 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_columnwise_table,
-					self.parse_results_columnwise_table,
 					self.parse_results_rowwise_table,
+					self.parse_results_columnwise_table,
 					self.parse_results_matrix,
 					self.parse_procedure,
 					self.parse_metadata,
