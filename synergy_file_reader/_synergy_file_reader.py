@@ -13,7 +13,7 @@ def format_assert(condition):
 
 class ValueError_to_FormatMismatch(object):
 	"""
-		Context managere that catches all ValueErrors within the context and reraises them as FormatMismatches.
+		Context manager that catches all ValueErrors within the context and reraises them as FormatMismatches.
 	"""
 	def __enter__(self):
 		pass
@@ -203,6 +203,9 @@ class SynergyFile(list):
 					parser()
 				except FormatMismatch:
 					continue
+				except RepeatingData:
+					self.new_read()
+					break
 				else:
 					break
 			else:
