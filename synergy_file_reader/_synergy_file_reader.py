@@ -222,20 +222,19 @@ class SynergyFile(list):
 			for line in line_iter:
 				if line == "":
 					break
-				elif line.count("\t") != 1:
-					raise FormatMismatch
-				else:
-					key,_,value = line.partition("\t")
-					if key.endswith(":"):
-						key = key[:-1]
-					new_metadata[key] = value
+				
+				format_assert( line.count("\t") == 1 )
+				key,_,value = line.partition("\t")
+				if key.endswith(":"):
+					key = key[:-1]
+				new_metadata[key] = value
 		
 		self[-1].add_metadata(**new_metadata)
 	
 	def parse_procedure(self):
 		with self.line_buffer as line_iter:
-			if next(line_iter)!="Procedure Details" or next(line_iter)!="":
-				raise FormatMismatch
+			format_assert( next(line_iter) == "Procedure Details" )
+			format_assert( next(line_iter) == "" )
 			
 			procedure = []
 			while line:=next(line_iter):
