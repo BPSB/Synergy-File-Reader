@@ -257,8 +257,8 @@ class SynergyFile(list):
 	def parse_results_rowwise_table(self):
 		line_iter = iter(self.line_buffer)
 		
-		format_assert(next(line_iter)=="Results")
-		format_assert(next(line_iter)=="")
+		format_assert( next(line_iter)=="Results" )
+		format_assert( next(line_iter)=="" )
 		
 		cols = next(line_iter).split("\t")
 		format_assert( cols[0]=="Well" )
@@ -298,8 +298,8 @@ class SynergyFile(list):
 	def parse_results_columnwise_table(self):
 		line_iter = iter(self.line_buffer)
 		
-		format_assert(next(line_iter)=="Results")
-		format_assert(next(line_iter)=="")
+		format_assert( next(line_iter)=="Results" )
+		format_assert( next(line_iter)=="" )
 		
 		cols = next(line_iter).rstrip("\t").split("\t")
 		format_assert( cols[0]=="Well" )
