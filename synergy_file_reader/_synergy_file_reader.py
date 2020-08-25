@@ -22,8 +22,33 @@ class ValueError_to_FormatMismatch(object):
 		if exc_type:
 			if issubclass(exc_type,ValueError):
 				raise FormatMismatch from exc_value
-			else:
-				return False
+
+class Attempt(object):
+	def __init__(self,parser,parent):
+		self.parser = parser
+		self.parent = parent
+	
+	def __enter__(self):
+		return self.parser
+	
+	def __exit__(self, exc_type, exc_value, exc_traceback):
+		if exc_type:
+			if issubclass(exc_type,ValueError):
+				return True
+		else:
+			self.parent.success = True
+
+class TryFormats(object):
+	def __init__(self):
+		self.success = False
+	
+	def __iter__(self):
+		for format_parser in format_parsers:
+			yield Attempt(format_parser,self)
+			if self.success:
+				break
+		else:
+			raise FormatMismatch
 
 class SynergyResult(object):
 	def __init__(self):
@@ -239,15 +264,9 @@ class SynergyFile(list):
 				row = new_row
 			format_assert(row is not None)
 			
-			for format_parser in format_parsers:
-				try:
+			for attempt in TryFormats():
+				with attempt as format_parser:
 					numbers = [format_parser(number) for number in numbers]
-				except ValueError:
-					continue
-				else:
-					break
-			else:
-				raise FormatMismatch
 			
 			results.append((row,numbers,*extract_channel(name)))
 		
@@ -281,15 +300,9 @@ class SynergyFile(list):
 			format_assert( len(fields)==len(numbers) )
 			
 			for (key,channel),number in zip(fields,numbers):
-				for format_parser in format_parsers:
-					try:
+				for attempt in TryFormats():
+					with attempt as format_parser:
 						number = format_parser(number)
-					except ValueError:
-						continue
-					else:
-						break
-				else:
-					raise FormatMismatch
 				
 				results.append((row,col,number,key,channel))
 			
@@ -321,15 +334,9 @@ class SynergyFile(list):
 			
 			format_assert( len(wells)==len(numbers) )
 			
-			for format_parser in format_parsers:
-				try:
+			for attempt in TryFormats():
+				with attempt as format_parser:
 					numbers = [format_parser(number) for number in numbers]
-				except ValueError:
-					continue
-				else:
-					break
-			else:
-				raise FormatMismatch
 			
 			results.append((key,channel,numbers))
 			
