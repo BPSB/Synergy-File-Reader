@@ -12,6 +12,9 @@ def format_assert(condition):
 		raise FormatMismatch
 
 class ValueError_to_FormatMismatch(object):
+	"""
+		Context managere that catches all ValueErrors within the context and reraises them as FormatMismatches.
+	"""
 	def __enter__(self):
 		pass
 	
@@ -73,7 +76,7 @@ class SynergyResult(object):
 		elif len(index)==1:
 			channel = index[0]
 		else:
-			raise KeyError("Too many indices.")
+			raise ValueError("Too many indices.")
 		
 		return row,col,channel
 
@@ -230,10 +233,10 @@ class SynergyFile(list):
 				break
 			new_row,*numbers,name = line.split("\t")
 			
-			if new_row.isupper() and new_row.isalpha():
+			if new_row:
+				format_assert(new_row.isupper())
+				format_assert(new_row.isalpha())
 				row = new_row
-			else:
-				format_assert(new_row=="")
 			format_assert(row is not None)
 			
 			for format_parser in format_parsers:
