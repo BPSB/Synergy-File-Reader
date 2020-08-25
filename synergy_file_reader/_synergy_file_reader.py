@@ -11,6 +11,17 @@ def format_assert(condition):
 	if not condition:
 		raise FormatMismatch
 
+class ValueError_to_FormatMismatch(object):
+	def __enter__(self):
+		pass
+	
+	def __exit__(self, exc_type, exc_value, exc_traceback):
+		if exc_type:
+			if issubclass(exc_type,ValueError):
+				raise FormatMismatch from exc_value
+			else:
+				return False
+
 class SynergyResult(object):
 	def __init__(self):
 		self.data = {}
@@ -208,10 +219,8 @@ class SynergyFile(list):
 		
 		format_assert(next(line_iter)=="Results")
 		
-		try:
+		with ValueError_to_FormatMismatch():
 			cols = [int(c) for c in next(line_iter).split("\t")[1:]]
-		except ValueError:
-			raise FormatMismatch
 		format_assert( cols==list(range(1,len(cols)+1)) )
 		
 		results = []
@@ -254,10 +263,8 @@ class SynergyFile(list):
 		cols = next(line_iter).split("\t")
 		format_assert( cols[0]=="Well" )
 		
-		try:
+		with ValueError_to_FormatMismatch():
 			fields = [ extract_channel(col) for col in cols[1:] ]
-		except ValueError:
-			raise FormatMismatch
 		
 		results = []
 		for line in line_iter:
@@ -265,10 +272,8 @@ class SynergyFile(list):
 				break
 			well,*numbers = line.split("\t")
 			
-			try:
+			with ValueError_to_FormatMismatch():
 				row,col = split_well_name(well)
-			except ValueError:
-				raise FormatMismatch
 			
 			format_assert( len(fields)==len(numbers) )
 			
@@ -299,10 +304,8 @@ class SynergyFile(list):
 		cols = next(line_iter).rstrip("\t").split("\t")
 		format_assert( cols[0]=="Well" )
 		
-		try:
+		with ValueError_to_FormatMismatch():
 			wells = [ split_well_name(col) for col in cols[1:] ]
-		except ValueError:
-			raise FormatMismatch
 		
 		results = []
 		for line in line_iter:
@@ -310,10 +313,8 @@ class SynergyFile(list):
 				break
 			name,*numbers = line.rstrip("\t").split("\t")
 			
-			try:
+			with ValueError_to_FormatMismatch():
 				key,channel = extract_channel(name)
-			except ValueError:
-				raise FormatMismatch
 			
 			format_assert( len(wells)==len(numbers) )
 			
@@ -338,23 +339,21 @@ class SynergyFile(list):
 	def parse_raw_data_columnwise_table(self):
 		line_iter = iter(self.line_buffer)
 		channel = next(line_iter)
-		if "\t" in channel or next(line_iter)!="":
-			raise FormatMismatch
+		format_assert( "\t" not in channel )
+		format_assert( next(line_iter) == "" )
 		
 		fields = next(line_iter).split("\t")
-		if len(fields)<3 or fields[0]!="Time" or fields[1]!="T° "+channel:
-			raise FormatMismatch
+		format_assert( len(fields) >= 3 )
+		format_assert( fields[0] == "Time" )
+		format_assert( fields[1] == "T° "+channel )
 		wells = fields[2:]
 		
 		results = []
 		while line:=next(line_iter):
 			time,temperature,*numbers = line.split("\t")
-			if len(numbers)!=len(wells):
-				raise FormatMismatch
-			try:
+			format_assert( len(numbers) == len(wells) )
+			with ValueError_to_FormatMismatch():
 				result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
-			except ValueError:
-				raise FormatMismatch
 			results.append(result)
 		
 		for time,temperature,*numbers in results:
