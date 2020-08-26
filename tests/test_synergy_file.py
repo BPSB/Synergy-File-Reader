@@ -4,12 +4,15 @@ from pytest import mark
 from os import path
 import numpy as np
 
-@mark.parametrize("filename",[
-		"columnwise_table_matrix.txt",
-		"columnwise_table_rowwise_table.txt",
-		"columnwise_table_columnwise_table.txt",
+@mark.parametrize(
+		  "filename,                         temperature_ts",
+	[
+		( "columnwise_table_matrix.txt"          , True  ),
+		( "columnwise_table_rowwise_table.txt"   , True  ),
+		( "columnwise_table_columnwise_table.txt", True  ),
+		( "matrix_matrix.txt"                    , False ),
 	])
-def test_time_series(filename):
+def test_time_series(filename,temperature_ts):
 	data = SynergyFile(path.join("time_series",filename))
 	assert len(data)==1
 	read = data[0]
@@ -33,11 +36,15 @@ def test_time_series(filename):
 	assert read.times[-1] == 17*3600+29*60+10
 	assert np.all( np.diff(read.times)==10*60 )
 	
-	temps = read.temperatures["OD:600"]
-	assert len(read.times) == len(temps)
-	assert temps[ 0] == 30.0
-	assert temps[-1] == 30.1
-	assert temps[ 5] == 30.1
+	if temperature_ts:
+		temps = read.temperatures["OD:600"]
+		assert len(read.times) == len(temps)
+		assert temps[ 0] == 30.0
+		assert temps[-1] == 30.1
+		assert temps[ 5] == 30.1
+		assert read.temperature_range == (30.0,30.1)
+	else:
+		assert read.temperature_range == ( 0.0,30.1)
 	
 	assert read["C12" ,"OD:600"][2] == 0.088
 	assert read["C",12,"OD:600"][2] == 0.088

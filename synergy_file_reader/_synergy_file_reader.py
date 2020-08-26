@@ -1,4 +1,9 @@
-from synergy_file_reader.tools import split_well_name, extract_channel, parse_time, parse_number, LineBuffer
+from synergy_file_reader.tools import (
+		split_well_name, extract_channel,
+		parse_number, parse_time, parse_timestamp,
+		row_iter,
+		LineBuffer,
+	)
 from math import isnan
 from datetime import datetime
 
@@ -159,22 +164,41 @@ class SynergyRead(SynergyResult):
 		
 		self.results[name][row,col,channel] = value
 	
-	def add_metadata(self,**metadata):
-		if any( key in self.metadata for key in metadata ):
+	def add_metadata(self,**new_metadata):
+		if any( key in self.metadata for key in new_metadata ):
 			raise RepeatingData
 		
-		if "Date" in metadata:
-			assert "Time" in metadata
+		if "Date" in new_metadata:
+			assert "Time" in new_metadata
 			self.metadata["datetime"] = datetime.strptime(
-				metadata.pop("Date") + " " + metadata.pop("Time"),
+				new_metadata.pop("Date") + " " + new_metadata.pop("Time"),
 				"%m/%d/%Y %I:%M:%S %p"
 			)
 		
-		for key,value in metadata.items():
+		if "Min Temperature" in new_metadata:
+			assert "Max Temperature" in new_metadata
+			self._temperature_range = (
+					parse_number(new_metadata.pop("Min Temperature")),
+					parse_number(new_metadata.pop("Max Temperature")),
+				)
+		
+		for key,value in new_metadata.items():
 			if key=="Software Version":
 				value = tuple( int(x) for x in value.split(".") )
 			
 			self.metadata[key] = value
+	
+	@property
+	def temperature_range(self):
+		if hasattr(self,"_temperature_range"):
+			return self._temperature_range
+		else:
+			all_temps = [
+					temp
+					for temps in self.temperatures.values()
+					for temp in temps
+				]
+			return min(all_temps),max(all_temps)
 	
 	# def __repr__(self):
 	# 	return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
@@ -193,6 +217,7 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_columnwise_table,
+					self.parse_raw_data_matrix,
 					self.parse_results_rowwise_table,
 					self.parse_results_columnwise_table,
 					self.parse_results_matrix,
@@ -338,7 +363,7 @@ class SynergyFile(list):
 						numbers = [format_parser(number) for number in numbers]
 				
 				results.append((key,channel,numbers))
-				
+			
 			for key,channel,numbers in results:
 				for (row,col),number in zip(wells,numbers):
 					self[-1].add_result(key,channel,row,col,number)
@@ -369,4 +394,34 @@ class SynergyFile(list):
 				self[-1].add_temperature(time,channel,temperature)
 				for well,number in zip(wells,numbers):
 					self[-1].add_raw_result(time,channel,*split_well_name(well),number)
+	
+	def parse_raw_data_matrix(self):
+		with self.line_buffer as line_iter:
+			channel, _, timestamp = next(line_iter).partition(" - ")
+			with ValueError_to_FormatMismatch():
+				number,time = parse_timestamp(timestamp)
+				format_assert( (number,time) == parse_timestamp(next(line_iter)) )
+				cols = [int(c) for c in next(line_iter).split("\t")[1:]]
+			format_assert( cols==list(range(1,len(cols)+1)) )
+			
+			results = []
+			for line,expected_row in zip(line_iter,row_iter()):
+				if line == "":
+					break
+				row,*numbers,label = line.split("\t")
+				format_assert( len(numbers) == len(cols) )
+				format_assert( row == expected_row )
+				format_assert( label == f"{channel} Read#{number}" )
+				with ValueError_to_FormatMismatch():
+					numbers = list(map(parse_number,numbers))
+				
+				results.append((row,numbers))
+		
+		if time==0 and number>0:
+			for _,numbers in results:
+				format_assert( all(isnan(number) for number in numbers) )
+		else:
+			for row,numbers in results:
+				for col,number in zip(cols,numbers):
+					self[-1].add_raw_result(time,channel,row,col,number)
 
