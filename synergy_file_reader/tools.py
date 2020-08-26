@@ -33,6 +33,17 @@ def parse_number(string):
 	else:
 		return nan
 
+def parse_timestamp(string):
+	if not string.startswith("Time"):
+		raise ValueError
+	string = string[4:].strip()
+	number, _, time = string.partition(" (")
+	number = int(number)
+	if not time or time[-1] != ")":
+		raise ValueError
+	time = parse_time(time[:-1])
+	return number, time
+
 class LineBuffer(object):
 	def __init__(self,lines):
 		self.lines = lines

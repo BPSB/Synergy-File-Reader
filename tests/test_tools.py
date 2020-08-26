@@ -1,4 +1,8 @@
-from synergy_file_reader.tools import split_well_name, parse_time, LineBuffer, extract_channel
+from synergy_file_reader.tools import (
+		split_well_name, extract_channel,
+		parse_time, parse_timestamp,
+		LineBuffer,
+	)
 from pytest import mark, raises
 
 @mark.parametrize(
@@ -45,6 +49,21 @@ def test_extract_bad_channel(string):
 	)
 def test_parse_time(string,seconds):
 	assert parse_time(string) == seconds
+
+@mark.parametrize(
+		"string, number, seconds",
+		[
+			( "Time 1 (0:09:10)"   ,  1,   550 ),
+			( "Time  98 (16:19:10)", 98, 58750 ),
+		]
+	)
+def test_parse_timestamp(string,number,seconds):
+	assert parse_timestamp(string) == (number,seconds)
+
+@mark.parametrize("string",["Time 1 (0:09:10","abc"])
+def test_parse_bad_timestamp(string):
+	with raises(ValueError):
+		parse_timestamp(string)
 
 def test_LineBuffer():
 	lb = LineBuffer(["","","a","b","","c","","","d","e","","","f",""])
