@@ -1,4 +1,5 @@
 from math import nan
+from string import ascii_uppercase
 
 def split_well_name(name):
 	if name=="":
@@ -43,6 +44,13 @@ def parse_timestamp(string):
 		raise ValueError
 	time = parse_time(time[:-1])
 	return number, time
+
+def row_iter():
+	for letter in ascii_uppercase:
+		yield letter
+	for letter_1 in ascii_uppercase:
+		for letter_2 in ascii_uppercase:
+			yield letter_1+letter_2
 
 class LineBuffer(object):
 	def __init__(self,lines):

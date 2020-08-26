@@ -1,6 +1,7 @@
 from synergy_file_reader.tools import (
 		split_well_name, extract_channel,
 		parse_time, parse_timestamp,
+		row_iter,
 		LineBuffer,
 	)
 from pytest import mark, raises
@@ -64,6 +65,14 @@ def test_parse_timestamp(string,number,seconds):
 def test_parse_bad_timestamp(string):
 	with raises(ValueError):
 		parse_timestamp(string)
+
+def test_row_iter():
+	items = list(row_iter())
+	assert items[0] == "A"
+	assert items[25] == "Z"
+	assert items[26] == "AA"
+	assert items[28] == "AC"
+	assert items[81] == "CD"
 
 def test_LineBuffer():
 	lb = LineBuffer(["","","a","b","","c","","","d","e","","","f",""])
