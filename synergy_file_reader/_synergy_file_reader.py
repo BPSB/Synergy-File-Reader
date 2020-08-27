@@ -128,33 +128,34 @@ class SynergyRead(SynergyResult):
 	def __init__(self):
 		super().__init__()
 		self.metadata = {}
-		self.times = []
+		self.times = {}
 		self.temperatures = {}
 		self.results = {}
 	
-	def add_time(self,time):
-		if self.times:
-			if time != self.times[-1]:
-				assert time>self.times[-1]
-				self.times.append(time)
+	def add_time(self,time,channel):
+		self.add_channel(channel)
+		if channel in self.times:
+			if time != self.times[channel][-1]:
+				assert time > self.times[channel][-1]
+				self.times[channel].append(time)
 		else:
-			self.times.append(time)
+			self.times[channel] = [time]
 	
 	def add_temperature(self,time,channel,temperature):
-		self.add_time(time)
+		self.add_time(time,channel)
 		self.add_channel(channel)
 		try:
 			self.temperatures[channel].append(temperature)
 		except KeyError:
 			self.temperatures[channel] = [temperature]
 		else:
-			assert len(self.temperatures[channel])==len(self.times)
+			assert len(self.temperatures[channel])==len(self.times[channel])
 	
 	def add_raw_result(self,time,channel,row,col,value):
-		self.add_time(time)
+		self.add_time(time,channel)
 		if (row,col,channel) in self.keys():
 			self[row,col,channel].append(value)
-			assert len(self[row,col,channel])==len(self.times)
+			assert len(self[row,col,channel])==len(self.times[channel])
 		else:
 			self[row,col,channel] = [value]
 	

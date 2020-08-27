@@ -79,3 +79,4 @@ class LineBuffer(object):
 	def __exit__(self, exc_type, exc_value, exc_traceback):
 		if exc_type is None:
 			self.clear()
+

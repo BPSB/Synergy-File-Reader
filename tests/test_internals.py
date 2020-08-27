@@ -34,4 +34,4 @@ def test_TryFormats_success(successes):
 			if not success:
 				raise ValueError
 	assert number_of_attempts == successes.index(True)+1
-	
+

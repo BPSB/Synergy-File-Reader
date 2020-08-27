@@ -33,13 +33,14 @@ def test_time_series(filename,temperature_ts):
 	assert read.rows == list("ABCDEFGH")
 	assert read.cols == list(range(1,13))
 	
-	assert read.times[0] == 9*60+10
-	assert read.times[-1] == 17*3600+29*60+10
-	assert np.all( np.diff(read.times)==10*60 )
+	times = read.times["OD:600"]
+	assert times[0] == 9*60+10
+	assert times[-1] == 17*3600+29*60+10
+	assert np.all( np.diff(times)==10*60 )
 	
 	if temperature_ts:
 		temps = read.temperatures["OD:600"]
-		assert len(read.times) == len(temps)
+		assert len(times) == len(temps)
 		assert temps[ 0] == 30.0
 		assert temps[-1] == 30.1
 		assert temps[ 5] == 30.1
