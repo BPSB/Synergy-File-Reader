@@ -66,6 +66,7 @@ def test_time_series(filename,temperature_ts):
 		  "filename,                         temperature_ts",
 	[
 		( "column.txt"          , True  ),
+		( "matrix.txt"          , False ),
 	])
 def test_multiple_observables(filename,temperature_ts):
 	data = SynergyFile(path.join("multiple_observables",filename))
@@ -98,9 +99,7 @@ def test_multiple_observables(filename,temperature_ts):
 			temps = read.temperatures[channel]
 			assert len(read.times[channel]) == len(temps)
 			assert all( temp==30.0 for temp in temps)
-		assert read.temperature_range == (30.0,30.0)
-	else:
-		TODO
+	assert read.temperature_range == (30.0,30.0)
 	
 	assert read["B12" ,"485,528"][2] == 48
 	assert read["B",12,"485,528"][2] == 48

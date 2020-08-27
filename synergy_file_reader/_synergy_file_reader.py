@@ -4,7 +4,7 @@ from synergy_file_reader.tools import (
 		row_iter,
 		LineBuffer,
 	)
-from math import isnan
+from math import isnan, inf
 from datetime import datetime
 
 format_parsers = [parse_time, parse_number]
@@ -166,6 +166,14 @@ class SynergyRead(SynergyResult):
 		self.results[name][row,col,channel] = value
 	
 	def add_metadata(self,**new_metadata):
+		if "Min Temperature" in new_metadata:
+			assert "Max Temperature" in new_metadata
+			self.update_temperature_range(
+					parse_number(new_metadata.pop("Min Temperature")),
+					parse_number(new_metadata.pop("Max Temperature")),
+				)
+		
+		# After Min and Max Temperatures as these can indeed repeat:
 		if any( key in self.metadata for key in new_metadata ):
 			raise RepeatingData
 		
@@ -176,19 +184,20 @@ class SynergyRead(SynergyResult):
 				"%m/%d/%Y %I:%M:%S %p"
 			)
 		
-		if "Min Temperature" in new_metadata:
-			assert "Max Temperature" in new_metadata
-			self._temperature_range = (
-					parse_number(new_metadata.pop("Min Temperature")),
-					parse_number(new_metadata.pop("Max Temperature")),
-				)
-		
 		for key,value in new_metadata.items():
 			if key=="Software Version":
 				value = tuple( int(x) for x in value.split(".") )
 			
 			self.metadata[key] = value
 	
+	def update_temperature_range(self,min_temp,max_temp):
+		if not hasattr(self,"_temperature_range"):
+			self._temperature_range = (inf,-inf)
+		self._temperature_range = (
+				min(self._temperature_range[0],min_temp),
+				max(self._temperature_range[1],max_temp),
+			)
+
 	@property
 	def temperature_range(self):
 		if hasattr(self,"_temperature_range"):
