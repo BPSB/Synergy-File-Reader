@@ -216,11 +216,12 @@ class SynergyFile(list):
 	def parse_file(self):
 		while self.line_buffer:
 			for parser in (
-					self.parse_raw_data_columnwise_table,
 					self.parse_raw_data_matrix,
+					self.parse_raw_data_rowwise_table,
+					self.parse_raw_data_columnwise_table,
+					self.parse_results_matrix,
 					self.parse_results_rowwise_table,
 					self.parse_results_columnwise_table,
-					self.parse_results_matrix,
 					self.parse_procedure,
 					self.parse_metadata,
 				):
@@ -387,13 +388,50 @@ class SynergyFile(list):
 				with ValueError_to_FormatMismatch():
 					result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
 				results.append(result)
+		
+		for time,temperature,*numbers in results:
+			if time==0 and all(isnan(number) for number in numbers):
+				continue
+			self[-1].add_temperature(time,channel,temperature)
+			for well,number in zip(wells,numbers):
+				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
+	
+	def parse_raw_data_rowwise_table(self):
+		with self.line_buffer as line_iter:
+			channel = next(line_iter)
+			format_assert( next(line_iter) == "" )
 			
-			for time,temperature,*numbers in results:
-				if time==0 and all(isnan(number) for number in numbers):
-					continue
-				self[-1].add_temperature(time,channel,temperature)
-				for well,number in zip(wells,numbers):
-					self[-1].add_raw_result(time,channel,*split_well_name(well),number)
+			with ValueError_to_FormatMismatch():
+				label,*times,last = next(line_iter).split("\t")
+			format_assert( last == "" )
+			format_assert( label == "Time" )
+			with ValueError_to_FormatMismatch():
+				times = [ parse_time(time) for time in times ]
+				label,*temperatures,last = next(line_iter).split("\t")
+			format_assert( last == "" )
+			format_assert( label == "T° "+channel )
+			format_assert( len(temperatures) == len(times) )
+			with ValueError_to_FormatMismatch():
+				temperatures = [ float(temperature) for temperature in temperatures ]
+			
+			results = []
+			wells = []
+			for line in line_iter:
+				if line=="": break
+				with ValueError_to_FormatMismatch():
+					well,*numbers,last = line.split("\t")
+					numbers = list(map(parse_number,numbers))
+				format_assert( last == "" )
+				format_assert( len(numbers) == len(times) )
+				wells.append(well)
+				results.append(numbers)
+		
+		for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
+			if i>0 and time==0:
+				break
+			self[-1].add_temperature(time,channel,temperature)
+			for well,number in zip(wells,numbers):
+				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
 	
 	def parse_raw_data_matrix(self):
 		with self.line_buffer as line_iter:
@@ -401,7 +439,9 @@ class SynergyFile(list):
 			with ValueError_to_FormatMismatch():
 				number,time = parse_timestamp(timestamp)
 				format_assert( (number,time) == parse_timestamp(next(line_iter)) )
-				cols = [int(c) for c in next(line_iter).split("\t")[1:]]
+				headers = next(line_iter).split("\t")
+				format_assert( headers[0] == "" )
+				cols = [ int(c) for c in headers[1:] ]
 			format_assert( cols==list(range(1,len(cols)+1)) )
 			
 			results = []

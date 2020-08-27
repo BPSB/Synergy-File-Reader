@@ -11,6 +11,7 @@ import numpy as np
 		( "columnwise_table_rowwise_table.txt"   , True  ),
 		( "columnwise_table_columnwise_table.txt", True  ),
 		( "matrix_matrix.txt"                    , False ),
+		( "rowwise_table_matrix.txt"             , True  ),
 	])
 def test_time_series(filename,temperature_ts):
 	data = SynergyFile(path.join("time_series",filename))
