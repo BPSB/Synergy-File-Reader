@@ -248,6 +248,7 @@ class SynergyFile(list):
 					self.parse_results_columnwise_table,
 					self.parse_single_row_matrix,
 					self.parse_single_row_ungrouped,
+					self.parse_single_column_ungrouped,
 					self.parse_procedure,
 					self.parse_metadata,
 				):
@@ -544,8 +545,25 @@ class SynergyFile(list):
 		
 		for row,col,number in results:
 			self[-1].add_raw_result(channel,row,col,number)
-
-
-
+	
+	def parse_single_column_ungrouped(self):
+		with self.line_buffer as line_iter:
+			channel = next(line_iter)
+			format_assert( next(line_iter) == "" )
+			
+			with ValueError_to_FormatMismatch():
+				Well,*wells,_ = next(line_iter).split(self.sep)
+				wells = [ split_well_name(well) for well in wells ]
+			format_assert( Well == "Well" )
+			
+			channel_2,*numbers,_ = next(line_iter).split(self.sep)
+			format_assert( channel_2 == channel )
+			with ValueError_to_FormatMismatch():
+				numbers = [ parse_number(number) for number in numbers ]
+			
+			format_assert( next(line_iter) == "" )
+		
+		for (row,col),number in zip(wells,numbers):
+			self[-1].add_raw_result(channel,row,col,number)
 
 
