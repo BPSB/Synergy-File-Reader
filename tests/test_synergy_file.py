@@ -5,13 +5,13 @@ from os import path
 import numpy as np
 
 @mark.parametrize(
-		  "filename,                         temperature_ts",
+		  "filename,       temperature_ts",
 	[
-		( "columnwise_table_matrix.txt"          , True  ),
-		( "columnwise_table_rowwise_table.txt"   , True  ),
-		( "columnwise_table_columnwise_table.txt", True  ),
-		( "matrix_matrix.txt"                    , False ),
-		( "rowwise_table_matrix.txt"             , True  ),
+		( "column_matrix.txt", True  ),
+		( "column_row.txt"   , True  ),
+		( "column_column.txt", True  ),
+		( "matrix_matrix.txt", False ),
+		( "row_matrix.txt"   , True  ),
 	])
 def test_time_series(filename,temperature_ts):
 	data = SynergyFile(path.join("time_series",filename))
