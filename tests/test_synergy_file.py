@@ -119,6 +119,7 @@ def test_multiple_observables(filename,temperature_ts,separator):
 		"matrix-row.txt",
 		"matrix-no-regroup.txt",
 		"row.txt",
+		"row_grouped.txt",
 	])
 def test_time_series(filename):
 	data = SynergyFile(path.join("single_measurement",filename))
