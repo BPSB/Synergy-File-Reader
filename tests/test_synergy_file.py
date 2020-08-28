@@ -116,8 +116,8 @@ def test_multiple_observables(filename,temperature_ts,separator):
 @mark.parametrize(
 		"filename",
 	[
-		"matrix-row.txt",
-		"matrix-no-regroup.txt",
+		"matrix.txt",
+		"matrix-grouped.txt",
 		"row.txt",
 		"row_grouped.txt",
 	])
