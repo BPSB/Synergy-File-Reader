@@ -311,25 +311,26 @@ class SynergyFile(list):
 			format_assert(next(line_iter)=="Results")
 			
 			with ValueError_to_FormatMismatch():
-				cols = [int(c) for c in next(line_iter).split(self.sep)[1:]]
-			format_assert( cols==list(range(1,len(cols)+1)) )
+				empty,*cols = next(line_iter).split(self.sep)
+				cols = [ int(col) for col in cols ]
+			format_assert( cols == list(range(1,len(cols)+1)) )
+			format_assert( empty == "" )
 			
 			results = []
 			row = None
 			for line in line_iter:
-				if line=="":
-					break
+				if line=="": break
 				new_row,*numbers,name = line.split(self.sep)
 				
 				if new_row:
 					format_assert(new_row.isupper())
 					format_assert(new_row.isalpha())
 					row = new_row
-				format_assert(row is not None)
+				format_assert( row is not None )
 				
 				for attempt in TryFormats():
 					with attempt as format_parser:
-						numbers = [format_parser(number) for number in numbers]
+						numbers = [ format_parser(number) for number in numbers ]
 				
 				results.append((row,numbers,name))
 			
@@ -339,8 +340,8 @@ class SynergyFile(list):
 	
 	def parse_results_rowwise_table(self):
 		with self.line_buffer as line_iter:
-			format_assert( next(line_iter)=="Results" )
-			format_assert( next(line_iter)=="" )
+			format_assert( next(line_iter) == "Results" )
+			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
 				Well,*names = next(line_iter).split(self.sep)
@@ -355,12 +356,10 @@ class SynergyFile(list):
 					row,col = split_well_name(well)
 				
 				format_assert( len(names)==len(numbers) )
-				
 				for name,number in zip(names,numbers):
 					for attempt in TryFormats():
 						with attempt as format_parser:
 							number = format_parser(number)
-					
 					results.append((name,row,col,number))
 		
 		for name,row,col,number in results:
