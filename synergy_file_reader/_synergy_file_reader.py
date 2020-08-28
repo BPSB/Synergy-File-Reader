@@ -308,7 +308,7 @@ class SynergyFile(list):
 	
 	def parse_results_matrix(self):
 		with self.line_buffer as line_iter:
-			format_assert(next(line_iter)=="Results")
+			format_assert( next(line_iter) == "Results" )
 			
 			with ValueError_to_FormatMismatch():
 				empty,*cols = next(line_iter).split(self.sep)
@@ -318,13 +318,13 @@ class SynergyFile(list):
 			
 			results = []
 			row = None
+			expected_rows = row_iter()
 			for line in line_iter:
 				if line=="": break
 				new_row,*numbers,name = line.split(self.sep)
 				
 				if new_row:
-					format_assert(new_row.isupper())
-					format_assert(new_row.isalpha())
+					format_assert( new_row == next(expected_rows) )
 					row = new_row
 				format_assert( row is not None )
 				
@@ -371,15 +371,17 @@ class SynergyFile(list):
 			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
-				Well,*wells,_ = next(line_iter).split(self.sep)
+				Well,*wells,last = next(line_iter).split(self.sep)
 				wells = [ split_well_name(well) for well in wells ]
-			format_assert( Well=="Well" )
+			format_assert( Well == "Well" )
+			format_assert( last == "" )
 			
 			results = []
 			for line in line_iter:
 				if line=="": break
-				name,*numbers,_ = line.split(self.sep)
-				format_assert( len(wells)==len(numbers) )
+				name,*numbers,last = line.split(self.sep)
+				format_assert( len(wells) == len(numbers) )
+				format_assert( last == "" )
 				
 				for attempt in TryFormats():
 					with attempt as format_parser:
@@ -397,21 +399,22 @@ class SynergyFile(list):
 			format_assert( self.sep not in channel )
 			format_assert( next(line_iter) == "" )
 			
-			fields = next(line_iter).split(self.sep)
-			format_assert( len(fields) >= 3 )
-			format_assert( fields[0] == "Time" )
-			format_assert( fields[1] == "T° "+channel )
-			wells = fields[2:]
+			with ValueError_to_FormatMismatch():
+				Time,Temp,*wells = next(line_iter).split(self.sep)
+			format_assert( Time == "Time" )
+			format_assert( Temp == "T° "+channel )
 			
 			results = []
 			while line:=next(line_iter):
-				time,temperature,*numbers = line.split(self.sep)
-				format_assert( len(numbers) == len(wells) )
 				with ValueError_to_FormatMismatch():
-					result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
-				results.append(result)
+					time,temperature,*numbers = line.split(self.sep)
+					numbers = [ parse_number(number) for number in numbers ]
+					time = parse_time(time)
+					temperature = parse_number(temperature)
+				format_assert( len(numbers) == len(wells) )
+				results.append((time,temperature,numbers))
 		
-		for time,temperature,*numbers in results:
+		for time,temperature,numbers in results:
 			if time==0 and all(isnan(number) for number in numbers):
 				continue
 			self[-1].add_temperature(time,channel,temperature)
@@ -421,6 +424,7 @@ class SynergyFile(list):
 	def parse_raw_data_row(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
+			format_assert( self.sep not in channel )
 			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
@@ -442,7 +446,7 @@ class SynergyFile(list):
 				if line=="": break
 				with ValueError_to_FormatMismatch():
 					well,*numbers,last = line.split(self.sep)
-					numbers = list(map(parse_number,numbers))
+					numbers = [ parse_number(number) for number in numbers ]
 				format_assert( last == "" )
 				format_assert( len(numbers) == len(times) )
 				wells.append(well)
@@ -461,50 +465,50 @@ class SynergyFile(list):
 			with ValueError_to_FormatMismatch():
 				number,time = parse_timestamp(timestamp)
 				format_assert( (number,time) == parse_timestamp(next(line_iter)) )
-				headers = next(line_iter).split(self.sep)
-				format_assert( headers[0] == "" )
-				cols = [ int(c) for c in headers[1:] ]
+				empty,*cols = next(line_iter).split(self.sep)
+				format_assert( empty == "" )
+				cols = [ int(col) for col in cols ]
 			format_assert( cols==list(range(1,len(cols)+1)) )
+			format_assert( cols )
 			
 			results = []
 			for line,expected_row in zip(line_iter,row_iter()):
-				if line == "":
-					break
+				if line=="": break
 				row,*numbers,label = line.split(self.sep)
 				format_assert( len(numbers) == len(cols) )
 				format_assert( row == expected_row )
 				format_assert( label == f"{channel} Read#{number}" )
 				with ValueError_to_FormatMismatch():
-					numbers = list(map(parse_number,numbers))
-				
+					numbers = [ parse_number(number) for number in numbers ]
 				results.append((row,numbers))
-		
-		if time==0 and number>0:
-			for _,numbers in results:
-				format_assert( all(isnan(number) for number in numbers) )
-		else:
-			for row,numbers in results:
-				for col,number in zip(cols,numbers):
-					self[-1].add_raw_result(channel,row,col,number,time)
+			
+			if time==0 and number>0:
+				for _,numbers in results:
+					format_assert( all(isnan(number) for number in numbers) )
+			else:
+				for row,numbers in results:
+					for col,number in zip(cols,numbers):
+						self[-1].add_raw_result(channel,row,col,number,time)
 
 	def parse_single_matrix(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
+			format_assert( self.sep not in channel )
 			
 			with ValueError_to_FormatMismatch():
-				cols = [int(c) for c in next(line_iter).split(self.sep)[1:]]
+				empty,*cols = next(line_iter).split(self.sep)
+				cols = [ int(col) for col in cols ]
+			format_assert( empty == "" )
 			format_assert( cols )
 			format_assert( cols==list(range(1,len(cols)+1)) )
 			
 			results = []
-			for line in line_iter:
-				if line=="":
-					break
+			for line,expected_row in zip(line_iter,row_iter()):
+				if line=="": break
 				with ValueError_to_FormatMismatch():
 					row,*numbers,label = line.split(self.sep)
-				format_assert(label==channel)
-				format_assert(row.isupper())
-				format_assert(row.isalpha())
+				format_assert( label == channel )
+				format_assert( row == expected_row )
 				
 				with ValueError_to_FormatMismatch():
 					numbers = [ parse_number(number) for number in numbers ]
@@ -518,6 +522,7 @@ class SynergyFile(list):
 	def parse_single_row(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
+			format_assert( self.sep not in channel )
 			format_assert( next(line_iter) == "" )
 			format_assert( next(line_iter) == "Well"+self.sep+channel )
 			
@@ -536,14 +541,17 @@ class SynergyFile(list):
 	def parse_single_column(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
+			format_assert( self.sep not in channel )
 			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
-				Well,*wells,_ = next(line_iter).split(self.sep)
+				Well,*wells,last = next(line_iter).split(self.sep)
 				wells = [ split_well_name(well) for well in wells ]
 			format_assert( Well == "Well" )
+			format_assert( last == "" )
 			
-			channel_2,*numbers,_ = next(line_iter).split(self.sep)
+			channel_2,*numbers,last = next(line_iter).split(self.sep)
+			format_assert( last == "" )
 			format_assert( channel_2 == channel )
 			with ValueError_to_FormatMismatch():
 				numbers = [ parse_number(number) for number in numbers ]
