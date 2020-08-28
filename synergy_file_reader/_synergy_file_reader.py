@@ -165,10 +165,15 @@ class SynergyRead(SynergyResult):
 			assert self.times is None
 			self[row,col,channel] = value
 	
-	def add_result(self,name,channel,row,col,value):
+	def add_result(self,name,row,col,value):
+		try:
+			key,channel = extract_channel(name)
+		except ValueError:
+			self.add_raw_result(name,row,col,value)
+			return
+		
 		if name not in self.results:
 			self.results[name] = SynergyResult()
-		
 		self.results[name][row,col,channel] = value
 	
 	def add_metadata(self,**new_metadata):
@@ -329,14 +334,8 @@ class SynergyFile(list):
 				results.append((row,numbers,name))
 			
 			for row,numbers,name in results:
-				try:
-					key,channel = extract_channel(name)
-				except ValueError:
-					for col,number in zip(cols,numbers):
-						self[-1].add_raw_result(name,row,col,number)
-				else:
-					for col,number in zip(cols,numbers):
-						self[-1].add_result(key,channel,row,col,number)
+				for col,number in zip(cols,numbers):
+					self[-1].add_result(name,row,col,number)
 	
 	def parse_results_rowwise_table(self):
 		with self.line_buffer as line_iter:
@@ -365,12 +364,7 @@ class SynergyFile(list):
 					results.append((name,row,col,number))
 		
 		for name,row,col,number in results:
-			try:
-				key,channel = extract_channel(name)
-			except ValueError:
-				self[-1].add_raw_result(name,row,col,number)
-			else:
-				self[-1].add_result(key,channel,row,col,number)
+			self[-1].add_result(name,row,col,number)
 	
 	def parse_results_columnwise_table(self):
 		with self.line_buffer as line_iter:
@@ -396,12 +390,7 @@ class SynergyFile(list):
 		
 		for name,numbers in results:
 			for (row,col),number in zip(wells,numbers):
-				try:
-					key,channel = extract_channel(name)
-				except ValueError:
-					self[-1].add_raw_result(name,row,col,number)
-				else:
-					self[-1].add_result(key,channel,row,col,number)
+				self[-1].add_result(name,row,col,number)
 	
 	def parse_raw_data_columnwise_table(self):
 		with self.line_buffer as line_iter:
