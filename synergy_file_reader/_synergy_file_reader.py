@@ -128,11 +128,13 @@ class SynergyRead(SynergyResult):
 	def __init__(self):
 		super().__init__()
 		self.metadata = {}
-		self.times = {}
+		self.times = None
 		self.temperatures = {}
 		self.results = {}
 	
 	def add_time(self,time,channel):
+		if self.times is None:
+			self.times = {}
 		self.add_channel(channel)
 		if channel in self.times:
 			if time != self.times[channel][-1]:
@@ -151,13 +153,17 @@ class SynergyRead(SynergyResult):
 		else:
 			assert len(self.temperatures[channel])==len(self.times[channel])
 	
-	def add_raw_result(self,time,channel,row,col,value):
-		self.add_time(time,channel)
-		if (row,col,channel) in self.keys():
-			self[row,col,channel].append(value)
-			assert len(self[row,col,channel])==len(self.times[channel])
+	def add_raw_result(self,channel,row,col,value,time=None):
+		if time is not None:
+			self.add_time(time,channel)
+			if (row,col,channel) in self.keys():
+				self[row,col,channel].append(value)
+				assert len(self[row,col,channel])==len(self.times[channel])
+			else:
+				self[row,col,channel] = [value]
 		else:
-			self[row,col,channel] = [value]
+			assert self.times is None
+			self[row,col,channel] = value
 	
 	def add_result(self,name,channel,row,col,value):
 		if name not in self.results:
@@ -172,6 +178,13 @@ class SynergyRead(SynergyResult):
 					parse_number(new_metadata.pop("Min Temperature")),
 					parse_number(new_metadata.pop("Max Temperature")),
 				)
+		
+		try:
+			act_temp = parse_number(new_metadata.pop("Actual Temperature"))
+		except KeyError:
+			pass
+		else:
+			self.update_temperature_range(act_temp,act_temp)
 		
 		# After Min and Max Temperatures as these can indeed repeat:
 		if any( key in self.metadata for key in new_metadata ):
@@ -233,6 +246,7 @@ class SynergyFile(list):
 					self.parse_results_matrix,
 					self.parse_results_rowwise_table,
 					self.parse_results_columnwise_table,
+					self.parse_single_row_matrix,
 					self.parse_procedure,
 					self.parse_metadata,
 				):
@@ -405,7 +419,7 @@ class SynergyFile(list):
 				continue
 			self[-1].add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
-				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
+				self[-1].add_raw_result(channel,*split_well_name(well),number,time)
 	
 	def parse_raw_data_rowwise_table(self):
 		with self.line_buffer as line_iter:
@@ -442,7 +456,7 @@ class SynergyFile(list):
 				break
 			self[-1].add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
-				self[-1].add_raw_result(time,channel,*split_well_name(well),number)
+				self[-1].add_raw_result(channel,*split_well_name(well),number,time)
 	
 	def parse_raw_data_matrix(self):
 		with self.line_buffer as line_iter:
@@ -474,5 +488,33 @@ class SynergyFile(list):
 		else:
 			for row,numbers in results:
 				for col,number in zip(cols,numbers):
-					self[-1].add_raw_result(time,channel,row,col,number)
+					self[-1].add_raw_result(channel,row,col,number,time)
+
+	def parse_single_row_matrix(self):
+		with self.line_buffer as line_iter:
+			channel = next(line_iter)
+			
+			with ValueError_to_FormatMismatch():
+				cols = [int(c) for c in next(line_iter).split(self.sep)[1:]]
+			format_assert( cols )
+			format_assert( cols==list(range(1,len(cols)+1)) )
+			
+			results = []
+			for line in line_iter:
+				if line=="":
+					break
+				with ValueError_to_FormatMismatch():
+					row,*numbers,label = line.split(self.sep)
+				format_assert(label==channel)
+				format_assert(row.isupper())
+				format_assert(row.isalpha())
+				
+				with ValueError_to_FormatMismatch():
+					numbers = [ parse_number(number) for number in numbers ]
+				
+				results.append((row,numbers))
+		
+		for row,numbers in results:
+			for col,number in zip(cols,numbers):
+				self[-1].add_raw_result(channel,row,col,number)
 

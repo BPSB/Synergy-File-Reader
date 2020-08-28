@@ -113,3 +113,35 @@ def test_multiple_observables(filename,temperature_ts,separator):
 	assert read["H",12,"530,580"][4] == 28
 	assert read["C",2,"OD:600"][4] == 0.085
 
+@mark.parametrize(
+		  "filename,                         temperature_ts",
+	[
+		( "matrix-row.txt"          , True  ),
+	])
+def test_time_series(filename,temperature_ts):
+	data = SynergyFile(path.join("single_measurement",filename))
+	assert len(data)==1
+	read = data[0]
+	
+	assert read.metadata["Software Version"] == (3,2,1)
+	assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert read.metadata["Plate Number"] == "Plate 1"
+	assert read.metadata["Reader Type"] == "Synergy H1"
+	assert read.metadata["Reader Serial Number"] == "18092726"
+	assert read.metadata["Reading Type"] == "Reader"
+	assert read.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert read.temperature_range == (30.0,30.1)
+	
+	assert read.metadata["datetime"] == datetime(2020,7,24,15,55,48)
+	
+	assert read.channels == ["Abs:600","Abs:700","Fluo:485,528"]
+	assert read.rows == list("ABCDEFGH")
+	assert read.cols == list(range(1,13))
+	
+	assert read["B5","Abs:600"] == 0.101
+	assert read["D6","Abs:700"] == 0.097
+	assert read["G11","Fluo:485,528"] == 104
+
+
