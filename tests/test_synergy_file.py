@@ -63,13 +63,18 @@ def test_time_series(filename,temperature_ts):
 
 
 @mark.parametrize(
-		  "filename,                         temperature_ts",
+		  "filename,     temperature_ts, separator",
 	[
-		( "column.txt"          , True  ),
-		( "matrix.txt"          , False ),
+		( "column.txt"   ,   True ,       "\t" ),
+		( "rowwise.txt"  ,   True ,       "\t" ),
+		( "matrix.txt"   ,   False,       "\t" ),
+		( "semicolon.txt",   True ,       ";"  ),
 	])
-def test_multiple_observables(filename,temperature_ts):
-	data = SynergyFile(path.join("multiple_observables",filename))
+def test_multiple_observables(filename,temperature_ts,separator):
+	data = SynergyFile(
+			path.join("multiple_observables",filename),
+			separator
+		)
 	assert len(data)==1
 	read = data[0]
 	

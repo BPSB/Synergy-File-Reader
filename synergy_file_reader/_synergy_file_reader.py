@@ -214,8 +214,9 @@ class SynergyRead(SynergyResult):
 	# 	return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
 
 class SynergyFile(list):
-	def __init__(self,filename,encoding="iso-8859-1"):
+	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
 		super().__init__()
+		self.sep = separator
 		self.new_read()
 		
 		with open(filename,"r",encoding=encoding) as f:
@@ -262,8 +263,8 @@ class SynergyFile(list):
 				if line == "":
 					break
 				
-				format_assert( line.count("\t") == 1 )
-				key,_,value = line.partition("\t")
+				format_assert( line.count(self.sep) == 1 )
+				key,_,value = line.partition(self.sep)
 				if key.endswith(":"):
 					key = key[:-1]
 				new_metadata[key] = value
@@ -289,7 +290,7 @@ class SynergyFile(list):
 			format_assert(next(line_iter)=="Results")
 			
 			with ValueError_to_FormatMismatch():
-				cols = [int(c) for c in next(line_iter).split("\t")[1:]]
+				cols = [int(c) for c in next(line_iter).split(self.sep)[1:]]
 			format_assert( cols==list(range(1,len(cols)+1)) )
 			
 			results = []
@@ -297,7 +298,7 @@ class SynergyFile(list):
 			for line in line_iter:
 				if line=="":
 					break
-				new_row,*numbers,name = line.split("\t")
+				new_row,*numbers,name = line.split(self.sep)
 				
 				if new_row:
 					format_assert(new_row.isupper())
@@ -320,7 +321,7 @@ class SynergyFile(list):
 			format_assert( next(line_iter)=="Results" )
 			format_assert( next(line_iter)=="" )
 			
-			cols = next(line_iter).split("\t")
+			cols = next(line_iter).split(self.sep)
 			format_assert( cols[0]=="Well" )
 			
 			with ValueError_to_FormatMismatch():
@@ -330,7 +331,7 @@ class SynergyFile(list):
 			for line in line_iter:
 				if line=="":
 					break
-				well,*numbers = line.split("\t")
+				well,*numbers = line.split(self.sep)
 				
 				with ValueError_to_FormatMismatch():
 					row,col = split_well_name(well)
@@ -352,7 +353,7 @@ class SynergyFile(list):
 			format_assert( next(line_iter)=="Results" )
 			format_assert( next(line_iter)=="" )
 			
-			cols = next(line_iter).rstrip("\t").split("\t")
+			cols = next(line_iter).rstrip(self.sep).split(self.sep)
 			format_assert( cols[0]=="Well" )
 			
 			with ValueError_to_FormatMismatch():
@@ -362,7 +363,7 @@ class SynergyFile(list):
 			for line in line_iter:
 				if line=="":
 					break
-				name,*numbers = line.rstrip("\t").split("\t")
+				name,*numbers = line.rstrip(self.sep).split(self.sep)
 				
 				with ValueError_to_FormatMismatch():
 					key,channel = extract_channel(name)
@@ -382,10 +383,10 @@ class SynergyFile(list):
 	def parse_raw_data_columnwise_table(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
-			format_assert( "\t" not in channel )
+			format_assert( self.sep not in channel )
 			format_assert( next(line_iter) == "" )
 			
-			fields = next(line_iter).split("\t")
+			fields = next(line_iter).split(self.sep)
 			format_assert( len(fields) >= 3 )
 			format_assert( fields[0] == "Time" )
 			format_assert( fields[1] == "T° "+channel )
@@ -393,7 +394,7 @@ class SynergyFile(list):
 			
 			results = []
 			while line:=next(line_iter):
-				time,temperature,*numbers = line.split("\t")
+				time,temperature,*numbers = line.split(self.sep)
 				format_assert( len(numbers) == len(wells) )
 				with ValueError_to_FormatMismatch():
 					result = parse_time(time),parse_number(temperature),*map(parse_number,numbers)
@@ -412,12 +413,12 @@ class SynergyFile(list):
 			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
-				label,*times,last = next(line_iter).split("\t")
+				label,*times,last = next(line_iter).split(self.sep)
 			format_assert( last == "" )
 			format_assert( label == "Time" )
 			with ValueError_to_FormatMismatch():
 				times = [ parse_time(time) for time in times ]
-				label,*temperatures,last = next(line_iter).split("\t")
+				label,*temperatures,last = next(line_iter).split(self.sep)
 			format_assert( last == "" )
 			format_assert( label == "T° "+channel )
 			format_assert( len(temperatures) == len(times) )
@@ -429,7 +430,7 @@ class SynergyFile(list):
 			for line in line_iter:
 				if line=="": break
 				with ValueError_to_FormatMismatch():
-					well,*numbers,last = line.split("\t")
+					well,*numbers,last = line.split(self.sep)
 					numbers = list(map(parse_number,numbers))
 				format_assert( last == "" )
 				format_assert( len(numbers) == len(times) )
@@ -449,7 +450,7 @@ class SynergyFile(list):
 			with ValueError_to_FormatMismatch():
 				number,time = parse_timestamp(timestamp)
 				format_assert( (number,time) == parse_timestamp(next(line_iter)) )
-				headers = next(line_iter).split("\t")
+				headers = next(line_iter).split(self.sep)
 				format_assert( headers[0] == "" )
 				cols = [ int(c) for c in headers[1:] ]
 			format_assert( cols==list(range(1,len(cols)+1)) )
@@ -458,7 +459,7 @@ class SynergyFile(list):
 			for line,expected_row in zip(line_iter,row_iter()):
 				if line == "":
 					break
-				row,*numbers,label = line.split("\t")
+				row,*numbers,label = line.split(self.sep)
 				format_assert( len(numbers) == len(cols) )
 				format_assert( row == expected_row )
 				format_assert( label == f"{channel} Read#{number}" )
