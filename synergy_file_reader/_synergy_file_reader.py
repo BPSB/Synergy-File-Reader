@@ -374,34 +374,33 @@ class SynergyFile(list):
 	
 	def parse_results_columnwise_table(self):
 		with self.line_buffer as line_iter:
-			format_assert( next(line_iter)=="Results" )
-			format_assert( next(line_iter)=="" )
-			
-			cols = next(line_iter).rstrip(self.sep).split(self.sep)
-			format_assert( cols[0]=="Well" )
+			format_assert( next(line_iter) == "Results" )
+			format_assert( next(line_iter) == "" )
 			
 			with ValueError_to_FormatMismatch():
-				wells = [ split_well_name(col) for col in cols[1:] ]
+				Well,*wells,_ = next(line_iter).split(self.sep)
+				wells = [ split_well_name(well) for well in wells ]
+			format_assert( Well=="Well" )
 			
 			results = []
 			for line in line_iter:
-				if line=="":
-					break
-				name,*numbers = line.rstrip(self.sep).split(self.sep)
-				
-				with ValueError_to_FormatMismatch():
-					key,channel = extract_channel(name)
-				
+				if line=="": break
+				name,*numbers,_ = line.split(self.sep)
 				format_assert( len(wells)==len(numbers) )
 				
 				for attempt in TryFormats():
 					with attempt as format_parser:
-						numbers = [format_parser(number) for number in numbers]
+						numbers = [ format_parser(number) for number in numbers ]
 				
-				results.append((key,channel,numbers))
-			
-			for key,channel,numbers in results:
-				for (row,col),number in zip(wells,numbers):
+				results.append((name,numbers))
+		
+		for name,numbers in results:
+			for (row,col),number in zip(wells,numbers):
+				try:
+					key,channel = extract_channel(name)
+				except ValueError:
+					self[-1].add_raw_result(name,row,col,number)
+				else:
 					self[-1].add_result(key,channel,row,col,number)
 	
 	def parse_raw_data_columnwise_table(self):
