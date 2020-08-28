@@ -246,11 +246,11 @@ class SynergyFile(list):
 		while self.line_buffer:
 			for parser in (
 					self.parse_raw_data_matrix,
-					self.parse_raw_data_rowwise_table,
-					self.parse_raw_data_columnwise_table,
+					self.parse_raw_data_row,
+					self.parse_raw_data_column,
 					self.parse_results_matrix,
-					self.parse_results_rowwise_table,
-					self.parse_results_columnwise_table,
+					self.parse_results_row,
+					self.parse_results_column,
 					self.parse_single_matrix,
 					self.parse_single_row,
 					self.parse_single_column,
@@ -338,7 +338,7 @@ class SynergyFile(list):
 				for col,number in zip(cols,numbers):
 					self[-1].add_result(name,row,col,number)
 	
-	def parse_results_rowwise_table(self):
+	def parse_results_row(self):
 		with self.line_buffer as line_iter:
 			format_assert( next(line_iter) == "Results" )
 			format_assert( next(line_iter) == "" )
@@ -365,7 +365,7 @@ class SynergyFile(list):
 		for name,row,col,number in results:
 			self[-1].add_result(name,row,col,number)
 	
-	def parse_results_columnwise_table(self):
+	def parse_results_column(self):
 		with self.line_buffer as line_iter:
 			format_assert( next(line_iter) == "Results" )
 			format_assert( next(line_iter) == "" )
@@ -391,7 +391,7 @@ class SynergyFile(list):
 			for (row,col),number in zip(wells,numbers):
 				self[-1].add_result(name,row,col,number)
 	
-	def parse_raw_data_columnwise_table(self):
+	def parse_raw_data_column(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
 			format_assert( self.sep not in channel )
@@ -418,7 +418,7 @@ class SynergyFile(list):
 			for well,number in zip(wells,numbers):
 				self[-1].add_raw_result(channel,*split_well_name(well),number,time)
 	
-	def parse_raw_data_rowwise_table(self):
+	def parse_raw_data_row(self):
 		with self.line_buffer as line_iter:
 			channel = next(line_iter)
 			format_assert( next(line_iter) == "" )
