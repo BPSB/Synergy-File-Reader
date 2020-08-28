@@ -85,7 +85,7 @@ def test_multiple_observables(filename,temperature_ts,separator):
 	assert read.metadata["Reader Type"] == "Synergy H1"
 	assert read.metadata["Reader Serial Number"] == "18092726"
 	assert read.metadata["Reading Type"] == "Reader"
-	assert read.metadata["procedure"] == "foo\nbar\nquz"
+	assert read.metadata["procedure"] == "foo\tbar\nquz"
 	
 	assert read.metadata["datetime"] == datetime(2020,7,24,15,27,56)
 	

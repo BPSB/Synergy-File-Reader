@@ -18,8 +18,7 @@ Reading Type;Reader
 
 Procedure Details
 
-foo
-bar
+foo;bar
 quz
 
 OD:600

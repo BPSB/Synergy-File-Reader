@@ -278,7 +278,7 @@ class SynergyFile(list):
 			
 			procedure = []
 			while line:=next(line_iter):
-				procedure.append(line)
+				procedure.append(line.replace(self.sep,"\t"))
 			self[-1].add_metadata( procedure = "\n".join(procedure) )
 	
 	def parse_gain_values(self):
