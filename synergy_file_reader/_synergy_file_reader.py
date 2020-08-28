@@ -324,11 +324,17 @@ class SynergyFile(list):
 					with attempt as format_parser:
 						numbers = [format_parser(number) for number in numbers]
 				
-				results.append((row,numbers,*extract_channel(name)))
+				results.append((row,numbers,name))
 			
-			for row,numbers,key,channel in results:
-				for col,number in zip(cols,numbers):
-					self[-1].add_result(key,channel,row,col,number)
+			for row,numbers,name in results:
+				try:
+					key,channel = extract_channel(name)
+				except ValueError:
+					for col,number in zip(cols,numbers):
+						self[-1].add_raw_result(name,row,col,number)
+				else:
+					for col,number in zip(cols,numbers):
+						self[-1].add_result(key,channel,row,col,number)
 	
 	def parse_results_rowwise_table(self):
 		with self.line_buffer as line_iter:

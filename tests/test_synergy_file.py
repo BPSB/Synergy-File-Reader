@@ -114,11 +114,12 @@ def test_multiple_observables(filename,temperature_ts,separator):
 	assert read["C",2,"OD:600"][4] == 0.085
 
 @mark.parametrize(
-		  "filename,                         temperature_ts",
+		"filename",
 	[
-		( "matrix-row.txt"          , True  ),
+		"matrix-row.txt",
+		"matrix-no-regroup.txt",
 	])
-def test_time_series(filename,temperature_ts):
+def test_time_series(filename):
 	data = SynergyFile(path.join("single_measurement",filename))
 	assert len(data)==1
 	read = data[0]
