@@ -112,12 +112,12 @@ class SynergyResult(object):
 
 	def __setitem__(self,index,result):
 		row,col,channel = self.convert_index(index)
-		self.add_row(row)
-		self.add_col(col)
-		self.add_channel(channel)
 		if (row,col,channel) in self.keys():
 			raise RepeatingData
 		else:
+			self.add_row(row)
+			self.add_col(col)
+			self.add_channel(channel)
 			self.data[row,col,channel] = result
 	
 	def __getitem__(self,index):
@@ -131,6 +131,7 @@ class SynergyRead(SynergyResult):
 		self.times = None
 		self.temperatures = {}
 		self.results = {}
+		self.gains = {}
 	
 	def add_time(self,time,channel):
 		if self.times is None:
@@ -152,6 +153,12 @@ class SynergyRead(SynergyResult):
 			self.temperatures[channel] = [temperature]
 		else:
 			assert len(self.temperatures[channel])==len(self.times[channel])
+	
+	def add_gain(self,channel,value):
+		self.add_channel(channel)
+		if channel in self.gains:
+			raise ValueError("Duplicate gain value")
+		self.gains[channel] = value
 	
 	def add_raw_result(self,channel,row,col,value,time=None):
 		if time is not None:
@@ -197,10 +204,22 @@ class SynergyRead(SynergyResult):
 		
 		if "Date" in new_metadata:
 			assert "Time" in new_metadata
-			self.metadata["datetime"] = datetime.strptime(
-				new_metadata.pop("Date") + " " + new_metadata.pop("Time"),
-				"%m/%d/%Y %I:%M:%S %p"
-			)
+			date_and_time = new_metadata.pop("Date") + " " + new_metadata.pop("Time")
+			for datetime_format in [
+						"%m/%d/%Y %I:%M:%S %p",
+						"%Y-%m-%d %H:%M:%S",
+				]:
+				try:
+					self.metadata["datetime"] = datetime.strptime(
+						date_and_time,
+						datetime_format,
+					)
+				except ValueError:
+					continue
+				else:
+					break
+			else:
+				raise ValueError(f"{date_and_time} does not match any implemented time format.")
 		
 		for key,value in new_metadata.items():
 			if key=="Software Version":
@@ -255,6 +274,7 @@ class SynergyFile(list):
 					self.parse_single_row,
 					self.parse_single_column,
 					self.parse_procedure,
+					self.parse_gain_values,
 					self.parse_metadata,
 				):
 				try:
@@ -289,8 +309,8 @@ class SynergyFile(list):
 				if key.endswith(":"):
 					key = key[:-1]
 				new_metadata[key] = value
-		
-		self[-1].add_metadata(**new_metadata)
+			
+			self[-1].add_metadata(**new_metadata)
 	
 	def parse_procedure(self):
 		with self.line_buffer as line_iter:
@@ -303,8 +323,22 @@ class SynergyFile(list):
 			self[-1].add_metadata( procedure = "\n".join(procedure) )
 	
 	def parse_gain_values(self):
-		# TODO
-		pass
+		with self.line_buffer as line_iter:
+			format_assert( next(line_iter) == "Automatic gain values\t " )
+			gains = []
+			for line in line_iter:
+				if line=="": break
+				label,value = line.split(self.sep)
+				Gain,_,channel = label.partition("(")
+				format_assert( Gain == "Gain" )
+				format_assert( channel.endswith(")") )
+				channel = channel[:-1]
+				with ValueError_to_FormatMismatch():
+					value = float(value)
+				gains.append((channel,value))
+			
+			for channel,value in gains:
+				self[-1].add_gain(channel,value)
 	
 	def parse_results_matrix(self):
 		with self.line_buffer as line_iter:
@@ -361,9 +395,9 @@ class SynergyFile(list):
 						with attempt as format_parser:
 							number = format_parser(number)
 					results.append((name,row,col,number))
-		
-		for name,row,col,number in results:
-			self[-1].add_result(name,row,col,number)
+			
+			for name,row,col,number in results:
+				self[-1].add_result(name,row,col,number)
 	
 	def parse_results_column(self):
 		with self.line_buffer as line_iter:
@@ -388,10 +422,10 @@ class SynergyFile(list):
 						numbers = [ format_parser(number) for number in numbers ]
 				
 				results.append((name,numbers))
-		
-		for name,numbers in results:
-			for (row,col),number in zip(wells,numbers):
-				self[-1].add_result(name,row,col,number)
+			
+			for name,numbers in results:
+				for (row,col),number in zip(wells,numbers):
+					self[-1].add_result(name,row,col,number)
 	
 	def parse_raw_data_column(self):
 		with self.line_buffer as line_iter:
@@ -413,13 +447,13 @@ class SynergyFile(list):
 					temperature = parse_number(temperature)
 				format_assert( len(numbers) == len(wells) )
 				results.append((time,temperature,numbers))
-		
-		for time,temperature,numbers in results:
-			if time==0 and all(isnan(number) for number in numbers):
-				continue
-			self[-1].add_temperature(time,channel,temperature)
-			for well,number in zip(wells,numbers):
-				self[-1].add_raw_result(channel,*split_well_name(well),number,time)
+			
+			for time,temperature,numbers in results:
+				if time==0 and all(isnan(number) for number in numbers):
+					continue
+				self[-1].add_temperature(time,channel,temperature)
+				for well,number in zip(wells,numbers):
+					self[-1].add_raw_result(channel,*split_well_name(well),number,time)
 	
 	def parse_raw_data_row(self):
 		with self.line_buffer as line_iter:
@@ -451,13 +485,13 @@ class SynergyFile(list):
 				format_assert( len(numbers) == len(times) )
 				wells.append(well)
 				results.append(numbers)
-		
-		for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
-			if i>0 and time==0:
-				break
-			self[-1].add_temperature(time,channel,temperature)
-			for well,number in zip(wells,numbers):
-				self[-1].add_raw_result(channel,*split_well_name(well),number,time)
+			
+			for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
+				if i>0 and time==0:
+					break
+				self[-1].add_temperature(time,channel,temperature)
+				for well,number in zip(wells,numbers):
+					self[-1].add_raw_result(channel,*split_well_name(well),number,time)
 	
 	def parse_raw_data_matrix(self):
 		with self.line_buffer as line_iter:
@@ -514,10 +548,10 @@ class SynergyFile(list):
 					numbers = [ parse_number(number) for number in numbers ]
 				
 				results.append((row,numbers))
-		
-		for row,numbers in results:
-			for col,number in zip(cols,numbers):
-				self[-1].add_raw_result(channel,row,col,number)
+			
+			for row,numbers in results:
+				for col,number in zip(cols,numbers):
+					self[-1].add_raw_result(channel,row,col,number)
 	
 	def parse_single_row(self):
 		with self.line_buffer as line_iter:
@@ -534,9 +568,9 @@ class SynergyFile(list):
 					number = parse_number(number)
 					row,col = split_well_name(well)
 				results.append((row,col,number))
-		
-		for row,col,number in results:
-			self[-1].add_raw_result(channel,row,col,number)
+			
+			for row,col,number in results:
+				self[-1].add_raw_result(channel,row,col,number)
 	
 	def parse_single_column(self):
 		with self.line_buffer as line_iter:
@@ -557,8 +591,8 @@ class SynergyFile(list):
 				numbers = [ parse_number(number) for number in numbers ]
 			
 			format_assert( next(line_iter) == "" )
-		
-		for (row,col),number in zip(wells,numbers):
-			self[-1].add_raw_result(channel,row,col,number)
+			
+			for (row,col),number in zip(wells,numbers):
+				self[-1].add_raw_result(channel,row,col,number)
 
 

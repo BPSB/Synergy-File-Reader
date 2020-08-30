@@ -149,4 +149,39 @@ def test_time_series(filename):
 	assert read["D6","Abs:700"] == 0.097
 	assert read["G11","Fluo:485,528"] == 104
 
+def test_multiple_with_gain():
+	data = SynergyFile("multiple_with_gain.txt")
+	assert len(data)==2
+	
+	for read in data:
+		assert read.metadata["Software Version"] == (3,3,14)
+		assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
+		assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
+		assert read.metadata["Plate Number"] == "Plate 1"
+		assert read.metadata["Reader Type"] == "Synergy H1"
+		assert read.metadata["Reader Serial Number"] == "14112519"
+		assert read.metadata["Reading Type"] == "Reader"
+		assert read.rows == list("ABCDEFGH")
+		assert read.cols == list(range(1,13))
+	
+	assert data[0].metadata["procedure"] == "foo\nbar\nquz"
+	assert data[1].metadata["procedure"] == "foo\tbar\nquz"
+	
+	assert data[0].temperature_range == (23.8,23.8)
+	assert data[1].temperature_range == (23.9,23.9)
+	
+	assert data[0].metadata["datetime"] == datetime(2019,12,8,16,22,44)
+	assert data[1].metadata["datetime"] == datetime(2019,12,8,16,31,10)
+	
+	assert data[0].channels == ["YFP:485,530","CFP:360/40,460/40"]
+	assert data[1].channels == ["YFP:485,530","CFP:425,475"]
+	
+	assert data[0].gains == {}
+	assert data[1].gains["YFP:485,530"] == 134
+	assert data[1].gains["CFP:425,475"] ==  74
+
+	assert data[0]["G3","YFP:485,530"] == 553
+	assert data[1]["G3","CFP:425,475"] == 1566
+	assert np.isnan( data[1]["G11","YFP:485,530"] )
+
 
