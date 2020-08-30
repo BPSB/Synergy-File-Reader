@@ -4,7 +4,7 @@ from synergy_file_reader.tools import (
 		row_iter,
 		LineBuffer,
 	)
-from math import isnan, inf
+import numpy as np
 from datetime import datetime
 
 format_parsers = [parse_time, parse_number]
@@ -139,17 +139,17 @@ class SynergyRead(SynergyResult):
 		if channel in self.times:
 			if time != self.times[channel][-1]:
 				assert time > self.times[channel][-1]
-				self.times[channel].append(time)
+				self.times[channel] = np.append(self.times[channel],time)
 		else:
-			self.times[channel] = [time]
+			self.times[channel] = np.array([time])
 	
-	def _add_temperature(self,time,channel,temperature):
+	def _add_temperature(self,time,channel,temp):
 		self._add_time(time,channel)
 		self._add_channel(channel)
 		try:
-			self.temperatures[channel].append(temperature)
+			self.temperatures[channel] = np.append(self.temperatures[channel],temp)
 		except KeyError:
-			self.temperatures[channel] = [temperature]
+			self.temperatures[channel] = np.array([temp])
 		else:
 			assert len(self.temperatures[channel])==len(self.times[channel])
 	
@@ -163,10 +163,10 @@ class SynergyRead(SynergyResult):
 		if time is not None:
 			self._add_time(time,channel)
 			if (row,col,channel) in self.keys():
-				self[row,col,channel].append(value)
+				self.data[row,col,channel] = np.append(self[row,col,channel],value)
 				assert len(self[row,col,channel])==len(self.times[channel])
 			else:
-				self[row,col,channel] = [value]
+				self[row,col,channel] = np.array([value])
 		else:
 			assert self.times is None
 			self[row,col,channel] = value
@@ -228,7 +228,7 @@ class SynergyRead(SynergyResult):
 	
 	def _update_temperature_range(self,min_temp,max_temp):
 		if not hasattr(self,"_temperature_range"):
-			self._temperature_range = (inf,-inf)
+			self._temperature_range = (np.inf,-np.inf)
 		self._temperature_range = (
 				min(self._temperature_range[0],min_temp),
 				max(self._temperature_range[1],max_temp),
@@ -246,8 +246,8 @@ class SynergyRead(SynergyResult):
 				]
 			return min(all_temps),max(all_temps)
 	
-	# def __repr__(self):
-	# 	return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data} )")
+	def __repr__(self):
+		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data}, {self.results} )")
 
 class SynergyFile(list):
 	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
@@ -448,7 +448,7 @@ class SynergyFile(list):
 				results.append((time,temperature,numbers))
 			
 			for time,temperature,numbers in results:
-				if time==0 and all(isnan(number) for number in numbers):
+				if time==0 and all(np.isnan(numbers)):
 					continue
 				self[-1]._add_temperature(time,channel,temperature)
 				for well,number in zip(wells,numbers):
@@ -517,7 +517,7 @@ class SynergyFile(list):
 			
 			if time==0 and number>0:
 				for _,numbers in results:
-					format_assert( all(isnan(number) for number in numbers) )
+					format_assert( all(np.isnan(numbers)) )
 			else:
 				for row,numbers in results:
 					for col,number in zip(cols,numbers):
