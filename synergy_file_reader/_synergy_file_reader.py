@@ -298,7 +298,7 @@ class SynergyPlate(SynergyResult):
 			return min(all_temps),max(all_temps)
 	
 	def __repr__(self):
-		return(f"SynergyPlate( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data}, {self.results} )")
+		return(f"SynergyPlate( {self.metadata}, {self.times}, {self.temperatures}, {self.data}, {self.results} )")
 	
 	def plot(self, *,
 			channels=None, colours=None,
