@@ -162,7 +162,7 @@ class SynergyPlate(SynergyResult):
 	* `channels` is a list of all channels for which recordings exists.
 	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
 	* `times` is a dictionary specifying the times of measurements (in seconds) for each channel.
-	* `temperature_range`: A tuple containing the minimal and maximal temperature specified in the file. This almost always contains some meaningful information.
+	* `temperature_range` is contains the minimal and maximal temperature specified in the file. This almost always contains some meaningful information.
 	* `temperatures` is a dictionary specifying the temperatures at the times of measurements for each channel. This is only not empty if the file specifies the information.
 	* `metadata` is a dictionary of metadata like the time of the measurement, procedure details, file paths, and information about the device.
 	* `results` is a dictionary of `SynergyResult`. These are usually aggregated estimates by the plate-reader software such as of the growth rate, lag time, etc.
