@@ -64,7 +64,21 @@ class TryFormats(object):
 
 class SynergyResult(object):
 	"""
-	A single well-wise result.
+	A single well- and channel-wise result.
+	
+	You can index this in different ways, using the well F7 for the channel `OD` as an example:
+	
+	* Row letter, column number, and channel separately: `result["F",7,"OD"]`
+	* Well identifier in one string: `result["F7","OD"]`
+	* Using lowercase letters to identify the row: `result["f7","OD"]`
+	* If there is only one channel, you do not need to specify it: `result["F7"]`
+	
+	It comes with the following attributes and methods:
+	
+	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
+	* `channels` is a list of all channels for which recordings exists.
+	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
+
 	"""
 	def __init__(self):
 		self.data = {}
@@ -139,6 +153,21 @@ class SynergyResult(object):
 class SynergyPlate(SynergyResult):
 	"""
 	Data for a single plate.
+	
+	Raw data can be accessed by indexing this object directly like a `SynergyResult`.
+	
+	This usally comes with the following methods and attributes:
+	
+	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
+	* `channels` is a list of all channels for which recordings exists.
+	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
+	* `times` is a dictionary specifying the times of measurements (in seconds) for each channel.
+	* `temperature_range`: A tuple containing the minimal and maximal temperature specified in the file. This almost always contains some meaningful information.
+	* `temperatures` is a dictionary specifying the temperatures at the times of measurements for each channel. This is only not empty if the file specifies the information.
+	* `metadata` is a dictionary of metadata like the time of the measurement, procedure details, file paths, and information about the device.
+	* `results` is a dictionary of `SynergyResult`s. These are usually aggregated estimates by the plate-reader software such as of the growth rate, lag time, etc.
+	* `gains` is a dictonary containing the automatic gains determined for each channel, if such exist. Otherwise it’s empty.
+	* `plot` allows to quickly plot the data and has an extensive documentation.
 	"""
 	def __init__(self):
 		super().__init__()
@@ -397,6 +426,18 @@ class SynergyPlate(SynergyResult):
 		return fig,axess
 
 class SynergyFile(list):
+	"""
+		Represents the contents of a Synergy file. For most practical purposes, you can treat this like a list of `SynergyPlate`s. Often this list contains only one plate.
+		
+		Parameters
+		----------
+		filename : string
+			The location of the filename from which to read the data.
+		separator : string
+			The separator character used in the file.
+		encoding : string specifying a supported encoding
+			The encoding of the file. This cannot be automatically detected.
+	"""
 	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
 		super().__init__()
 		self.sep = separator
