@@ -312,7 +312,7 @@ class SynergyPlate(SynergyResult):
 		"""
 		plots time series of the raw data using Matplotlib.
 		
-		This is a service function to quickly obtain a decent plot. It does not cover all potential use cases and is not suited as basis for extensive customisations. If you want a starting point for the latter, have a look at `this example <https://github.com/BPSB/synergy_file_reader/tree/master/exapmles/explicit_plot.py>`_.
+		This is a service function to quickly obtain a decent plot. It does not cover all potential use cases and is not suited as basis for extensive customisations. If you want a starting point for the latter, have a look at `this example <https://github.com/BPSB/synergy_file_reader/tree/master/examples/explicit_plot.py>`_.
 		
 		Returns
 		-------
