@@ -66,7 +66,7 @@ class SynergyResult(object):
 	"""
 	A single well- and channel-wise result.
 	
-	You can index this in different ways, using the well F7 for the channel `OD` as an example:
+	You can index this in different ways, using the well F7 for the channel `"OD"` as an example:
 	
 	* Row letter, column number, and channel separately: `result["F",7,"OD"]`
 	* Well identifier in one string: `result["F7","OD"]`
@@ -165,7 +165,7 @@ class SynergyPlate(SynergyResult):
 	* `temperature_range`: A tuple containing the minimal and maximal temperature specified in the file. This almost always contains some meaningful information.
 	* `temperatures` is a dictionary specifying the temperatures at the times of measurements for each channel. This is only not empty if the file specifies the information.
 	* `metadata` is a dictionary of metadata like the time of the measurement, procedure details, file paths, and information about the device.
-	* `results` is a dictionary of `SynergyResult`s. These are usually aggregated estimates by the plate-reader software such as of the growth rate, lag time, etc.
+	* `results` is a dictionary of `SynergyResult`. These are usually aggregated estimates by the plate-reader software such as of the growth rate, lag time, etc.
 	* `gains` is a dictonary containing the automatic gains determined for each channel, if such exist. Otherwise it’s empty.
 	* `plot` allows to quickly plot the data and has an extensive documentation.
 	"""
@@ -318,13 +318,13 @@ class SynergyPlate(SynergyResult):
 		Parameters
 		----------
 		
-		channels : iterable of keys or `None`
+		channels : iterable of keys or None
 			The channels to be plotted. If `None`, all channels will be plotted.
 		
-		colours: iterable of colour names or `None`
+		colours: iterable of colour names or None
 			The colours to use for the respective channels. If `None`, Matplotlib’s default colour cycle will be used.
 		
-		xlim, ylim: pair of numbers or `None`
+		xlim, ylim: pair of numbers or None
 			The ranges of the plot. If `None` this will be chosen automatically by Matplotlib.
 			
 		baseline: number or array
@@ -336,7 +336,7 @@ class SynergyPlate(SynergyResult):
 		plot_args: dictionary
 			Further keyword arguments to be passed to every plot (except the reference).
 		
-		timescale: one of `"seconds"`, `"minutes"`, `"hours"`, `"days"`, or `None`
+		timescale: one of "seconds", "minutes", "hours", "days", or None
 			Which timescale to use for labelling. If `None`, this will be guessed.
 		
 		label_pad: number
@@ -345,7 +345,7 @@ class SynergyPlate(SynergyResult):
 		label_size: Matplotlib font size
 			Size of row and column labels.
 		
-		reference: array or `None`
+		reference: array or None
 			A reference time series to be plotted below all time series.
 			The times used will be the ones for the first channel.
 		
@@ -427,7 +427,7 @@ class SynergyPlate(SynergyResult):
 
 class SynergyFile(list):
 	"""
-		Represents the contents of a Synergy file. For most practical purposes, you can treat this like a list of `SynergyPlate`s. Often this list contains only one plate.
+		Represents the contents of a Synergy file. For most practical purposes, you can treat this like a list of `SynergyPlate`. Often this list contains only one plate.
 		
 		Parameters
 		----------
