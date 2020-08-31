@@ -262,12 +262,61 @@ class SynergyRead(SynergyResult):
 	def plot(self, *,
 			channels=None, colours=None,
 			xlim=None, ylim=None,
-			baseline = 0,
+			baseline=0,
 			log_y=True, plot_args={},
 			timescale = None,
 			label_pad=20, label_size="xx-large",
 			reference=None, reference_plot_args={},
 		):
+		"""
+		plots time series of the raw data using Matplotlib.
+		
+		This is a service function to quickly obtain a decent plot. It does not cover all potential use cases and is not suited as basis for extensive customisations.
+		
+		Returns
+		-------
+		
+		figure : Matlotlib figure object
+		
+		axess : array of Matplotlib axes objects
+		
+		Parameters
+		----------
+		
+		channels : iterable of keys or `None`
+			The channels to be plotted. If `None`, all channels will be plotted.
+		
+		colours: iterable of colour names or `None`
+			The colours to use for the respective channels. If `None`, Matplotlib’s default colour cycle will be used.
+		
+		xlim, ylim: pair of numbers or `None`
+			The ranges of the plot. If `None` this will be chosen automatically by Matplotlib.
+			
+		baseline: number or array
+			This will be subtracted from the values of all time series before plotting (including the reference).
+		
+		log_y: boolean
+			Whether the ordinate should be logarithmic.
+		
+		plot_args: dictionary
+			Further keyword arguments to be passed to every plot (except the reference).
+		
+		timescale: one of `"seconds"`, `"minutes"`, `"hours"`, `"days"`, or `None`
+			Which timescale to use for labelling. If `None`, this will be guessed.
+		
+		label_pad: number
+			Padding of row and column labels.
+		
+		label_size: Matplotlib font size
+			Size of row and column labels.
+		
+		reference: array or `None`
+			A reference time series to be plotted below all time series.
+			The times used will be the ones for the first channel.
+		
+		reference_plot_args: dictionary
+			Keyword arguments to be passed to the plot command of the reference time series. This includes `color` and `label`.
+		"""
 		
 		from matplotlib.pyplot import subplots
 		
