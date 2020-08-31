@@ -23,6 +23,12 @@ def format_assert(condition):
 	if not condition:
 		raise FormatMismatch
 
+def parse_cols(cols):
+	cols = [ int(col) for col in cols ]
+	format_assert( cols )
+	format_assert( cols==list(range(1,len(cols)+1)) )
+	return cols
+
 class ValueError_to_FormatMismatch(object):
 	"""
 		Context manager that catches all ValueErrors within the context and reraises them as FormatMismatches.
@@ -529,8 +535,7 @@ class SynergyFile(list):
 		
 		with ValueError_to_FormatMismatch():
 			empty,*cols = next(line_iter).split(self.sep)
-			cols = [ int(col) for col in cols ]
-		format_assert( cols == list(range(1,len(cols)+1)) )
+			cols = parse_cols(cols)
 		format_assert( empty == "" )
 		
 		results = []
@@ -679,9 +684,7 @@ class SynergyFile(list):
 			format_assert( (number,time) == parse_timestamp(next(line_iter)) )
 			empty,*cols = next(line_iter).split(self.sep)
 			format_assert( empty == "" )
-			cols = [ int(col) for col in cols ]
-		format_assert( cols==list(range(1,len(cols)+1)) )
-		format_assert( cols )
+			cols = parse_cols(cols)
 		
 		results = []
 		for line,expected_row in zip(line_iter,row_iter()):
@@ -708,10 +711,8 @@ class SynergyFile(list):
 		
 		with ValueError_to_FormatMismatch():
 			empty,*cols = next(line_iter).split(self.sep)
-			cols = [ int(col) for col in cols ]
+			cols = parse_cols(cols)
 		format_assert( empty == "" )
-		format_assert( cols )
-		format_assert( cols==list(range(1,len(cols)+1)) )
 		
 		results = []
 		for line,expected_row in zip(line_iter,row_iter()):
