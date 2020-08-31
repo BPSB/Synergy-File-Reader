@@ -9,6 +9,13 @@ from datetime import datetime
 
 format_parsers = [parse_time, parse_number]
 
+timescales = {
+		"seconds":        1,
+		"minutes":       60,
+		"hours"  :    60*60,
+		"days"   : 24*60*60,
+	}
+
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
 
@@ -80,6 +87,9 @@ class SynergyResult(object):
 	
 	def keys(self):
 		return self.data.keys()
+	
+	def values(self):
+		return self.data.values()
 	
 	def _convert_index(self,index):
 		# Avoid string as single index being interpreted as iterable:
@@ -248,6 +258,88 @@ class SynergyRead(SynergyResult):
 	
 	def __repr__(self):
 		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data}, {self.results} )")
+	
+	def plot(self, *,
+			channels=None, colours=None,
+			xlim=None, ylim=None,
+			baseline = 0,
+			log_y=True, plot_args={},
+			timescale = None,
+			label_pad=20, label_size="xx-large",
+			reference=None, reference_plot_args={},
+		):
+		
+		from matplotlib.pyplot import subplots
+		
+		if channels is None:
+			channels = self.channels
+		
+		if colours is None:
+			colours = [ None for channel in channels ]
+		
+		if timescale is None:
+			t_max = self.times[-1] if xlim is None else xlim[1]
+			candidates = ( ts for ts in timescales if 2*timescales[ts]<t_max )
+			timescale = max( candidates, key = lambda ts: timescales[ts] )
+		
+		fig,axess = subplots(
+				len(self.rows), len(self.cols),
+				figsize=(15,10),
+				sharex="all", sharey="all"
+			)
+		
+		for axess_row,row in zip(axess,self.rows):
+			for axes,col in zip(axess_row,self.cols):
+				handles = []
+				if reference is not None:
+					handles.extend(axes.plot(
+						self.times[channels[0]]/timescales[timescale],
+						reference - baseline,
+						**reference_plot_args,
+					 ))
+				for channel,colour in zip(channels,colours):
+					handles.extend(axes.plot(
+							self.times[channel]/timescales[timescale],
+							self[row,col,channel] - baseline,
+							color = colour,
+							label = channel,
+							**plot_args,
+						))
+		
+		if log_y:
+			axes.set_yscale("log")
+		if xlim is not None:
+			axes.set_xlim( *(np.array(xlim)/timescales[timescale]) )
+		if ylim is not None:
+			axes.set_ylim(*ylim)
+		for axes,col in zip(axess[-1],self.cols):
+			axes.set_xlabel(timescale)
+		
+		if len(handles)==1:
+			for axes in axess[:,0]:
+				axes.set_ylabel(channels[0])
+		else:
+			fig.legend(handles=handles,loc="center right")
+		
+		# Subplot labelling thanks to https://stackoverflow.com/a/25814386/2127008
+		
+		for axes,col in zip(axess[0],self.cols):
+			axes.annotate(
+					col,
+					xy=(0.5,1), xycoords='axes fraction',
+					xytext=(0,label_pad), textcoords='offset points',
+					size=label_size, ha='center', va='baseline',
+				)
+
+		for axes,row in zip(axess[:,0],self.rows):
+			axes.annotate(
+					row,
+					xy=(0,0.5), xycoords=axes.yaxis.label,
+					xytext=(-label_pad,0), textcoords='offset points',
+					size=label_size, ha='center', va='center',
+				)
+		
+		return fig,axess
 
 class SynergyFile(list):
 	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
