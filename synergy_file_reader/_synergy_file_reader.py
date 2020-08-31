@@ -418,7 +418,8 @@ class SynergyFile(list):
 					self._parse_metadata,
 				):
 				try:
-					parser()
+					with self._line_buffer as line_iter:
+						parser(line_iter)
 				except FormatMismatch:
 					continue
 				except RepeatingData:
@@ -432,307 +433,294 @@ class SynergyFile(list):
 	def _new_read(self):
 		self.append(SynergyRead())
 	
-	def _parse_metadata(self):
+	def _parse_metadata(self,line_iter):
 		new_metadata = {}
+		# looping over lines here (instead doing one at a time) to:
+		# • get time and date together
+		# • raise RepeatingData as early as possible
 		
-		with self._line_buffer as line_iter:
-			# looping over lines here (instead doing one at a time) to:
-			# • get time and date together
-			# • raise RepeatingData as early as possible
+		for line in line_iter:
+			if line == "":
+				break
 			
-			for line in line_iter:
-				if line == "":
-					break
-				
-				format_assert( line.count(self.sep) == 1 )
-				key,_,value = line.partition(self.sep)
-				if key.endswith(":"):
-					key = key[:-1]
-				new_metadata[key] = value
-			
-			self[-1]._add_metadata(**new_metadata)
+			format_assert( line.count(self.sep) == 1 )
+			key,_,value = line.partition(self.sep)
+			if key.endswith(":"):
+				key = key[:-1]
+			new_metadata[key] = value
+		
+		self[-1]._add_metadata(**new_metadata)
 	
-	def _parse_procedure(self):
-		with self._line_buffer as line_iter:
-			format_assert( next(line_iter) == "Procedure Details" )
-			format_assert( next(line_iter) == "" )
-			
-			procedure = []
-			while line:=next(line_iter):
-				procedure.append(line.replace(self.sep,"\t"))
-			self[-1]._add_metadata( procedure = "\n".join(procedure) )
+	def _parse_procedure(self,line_iter):
+		format_assert( next(line_iter) == "Procedure Details" )
+		format_assert( next(line_iter) == "" )
+		
+		procedure = []
+		while line:=next(line_iter):
+			procedure.append(line.replace(self.sep,"\t"))
+		self[-1]._add_metadata( procedure = "\n".join(procedure) )
 	
-	def _parse_gain_values(self):
-		with self._line_buffer as line_iter:
-			format_assert( next(line_iter) == "Automatic gain values\t " )
-			gains = []
-			for line in line_iter:
-				if line=="": break
-				label,value = line.split(self.sep)
-				Gain,_,channel = label.partition("(")
-				format_assert( Gain == "Gain" )
-				format_assert( channel.endswith(")") )
-				channel = channel[:-1]
-				with ValueError_to_FormatMismatch():
-					value = float(value)
-				gains.append((channel,value))
-			
-			for channel,value in gains:
-				self[-1]._add_gain(channel,value)
-	
-	def _parse_results_matrix(self):
-		with self._line_buffer as line_iter:
-			format_assert( next(line_iter) == "Results" )
-			
+	def _parse_gain_values(self,line_iter):
+		format_assert( next(line_iter) == "Automatic gain values\t " )
+		gains = []
+		for line in line_iter:
+			if line=="": break
+			label,value = line.split(self.sep)
+			Gain,_,channel = label.partition("(")
+			format_assert( Gain == "Gain" )
+			format_assert( channel.endswith(")") )
+			channel = channel[:-1]
 			with ValueError_to_FormatMismatch():
-				empty,*cols = next(line_iter).split(self.sep)
-				cols = [ int(col) for col in cols ]
-			format_assert( cols == list(range(1,len(cols)+1)) )
-			format_assert( empty == "" )
-			
-			results = []
-			row = None
-			expected_rows = row_iter()
-			for line in line_iter:
-				if line=="": break
-				new_row,*numbers,name = line.split(self.sep)
-				
-				if new_row:
-					format_assert( new_row == next(expected_rows) )
-					row = new_row
-				format_assert( row is not None )
-				
-				for attempt in TryFormats():
-					with attempt as format_parser:
-						numbers = [ format_parser(number) for number in numbers ]
-				
-				results.append((row,numbers,name))
-			
-			for row,numbers,name in results:
-				for col,number in zip(cols,numbers):
-					self[-1]._add_result(name,row,col,number)
+				value = float(value)
+			gains.append((channel,value))
+		
+		for channel,value in gains:
+			self[-1]._add_gain(channel,value)
 	
-	def _parse_results_row(self):
-		with self._line_buffer as line_iter:
-			format_assert( next(line_iter) == "Results" )
-			format_assert( next(line_iter) == "" )
+	def _parse_results_matrix(self,line_iter):
+		format_assert( next(line_iter) == "Results" )
+		
+		with ValueError_to_FormatMismatch():
+			empty,*cols = next(line_iter).split(self.sep)
+			cols = [ int(col) for col in cols ]
+		format_assert( cols == list(range(1,len(cols)+1)) )
+		format_assert( empty == "" )
+		
+		results = []
+		row = None
+		expected_rows = row_iter()
+		for line in line_iter:
+			if line=="": break
+			new_row,*numbers,name = line.split(self.sep)
 			
-			with ValueError_to_FormatMismatch():
-				Well,*names = next(line_iter).split(self.sep)
-			format_assert( Well=="Well" )
+			if new_row:
+				format_assert( new_row == next(expected_rows) )
+				row = new_row
+			format_assert( row is not None )
 			
-			results = []
-			for line in line_iter:
-				if line=="": break
-				
-				well,*numbers = line.split(self.sep)
-				with ValueError_to_FormatMismatch():
-					row,col = split_well_name(well)
-				
-				format_assert( len(names)==len(numbers) )
-				for name,number in zip(names,numbers):
-					for attempt in TryFormats():
-						with attempt as format_parser:
-							number = format_parser(number)
-					results.append((name,row,col,number))
+			for attempt in TryFormats():
+				with attempt as format_parser:
+					numbers = [ format_parser(number) for number in numbers ]
 			
-			for name,row,col,number in results:
+			results.append((row,numbers,name))
+		
+		for row,numbers,name in results:
+			for col,number in zip(cols,numbers):
 				self[-1]._add_result(name,row,col,number)
 	
-	def _parse_results_column(self):
-		with self._line_buffer as line_iter:
-			format_assert( next(line_iter) == "Results" )
-			format_assert( next(line_iter) == "" )
+	def _parse_results_row(self,line_iter):
+		format_assert( next(line_iter) == "Results" )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			Well,*names = next(line_iter).split(self.sep)
+		format_assert( Well=="Well" )
+		
+		results = []
+		for line in line_iter:
+			if line=="": break
 			
+			well,*numbers = line.split(self.sep)
 			with ValueError_to_FormatMismatch():
-				Well,*wells,last = next(line_iter).split(self.sep)
-				wells = [ split_well_name(well) for well in wells ]
-			format_assert( Well == "Well" )
-			format_assert( last == "" )
+				row,col = split_well_name(well)
 			
-			results = []
-			for line in line_iter:
-				if line=="": break
-				name,*numbers,last = line.split(self.sep)
-				format_assert( len(wells) == len(numbers) )
-				format_assert( last == "" )
-				
+			format_assert( len(names)==len(numbers) )
+			for name,number in zip(names,numbers):
 				for attempt in TryFormats():
 					with attempt as format_parser:
-						numbers = [ format_parser(number) for number in numbers ]
-				
-				results.append((name,numbers))
-			
-			for name,numbers in results:
-				for (row,col),number in zip(wells,numbers):
-					self[-1]._add_result(name,row,col,number)
+						number = format_parser(number)
+				results.append((name,row,col,number))
+		
+		for name,row,col,number in results:
+			self[-1]._add_result(name,row,col,number)
 	
-	def _parse_raw_data_column(self):
-		with self._line_buffer as line_iter:
-			channel = next(line_iter)
-			format_assert( self.sep not in channel )
-			format_assert( next(line_iter) == "" )
-			
-			with ValueError_to_FormatMismatch():
-				Time,Temp,*wells = next(line_iter).split(self.sep)
-			format_assert( Time == "Time" )
-			format_assert( Temp == "T° "+channel )
-			
-			results = []
-			while line:=next(line_iter):
-				with ValueError_to_FormatMismatch():
-					time,temperature,*numbers = line.split(self.sep)
-					numbers = [ parse_number(number) for number in numbers ]
-					time = parse_time(time)
-					temperature = parse_number(temperature)
-				format_assert( len(numbers) == len(wells) )
-				results.append((time,temperature,numbers))
-			
-			for time,temperature,numbers in results:
-				if time==0 and all(np.isnan(numbers)):
-					continue
-				self[-1]._add_temperature(time,channel,temperature)
-				for well,number in zip(wells,numbers):
-					self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
-	
-	def _parse_raw_data_row(self):
-		with self._line_buffer as line_iter:
-			channel = next(line_iter)
-			format_assert( self.sep not in channel )
-			format_assert( next(line_iter) == "" )
-			
-			with ValueError_to_FormatMismatch():
-				label,*times,last = next(line_iter).split(self.sep)
+	def _parse_results_column(self,line_iter):
+		format_assert( next(line_iter) == "Results" )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			Well,*wells,last = next(line_iter).split(self.sep)
+			wells = [ split_well_name(well) for well in wells ]
+		format_assert( Well == "Well" )
+		format_assert( last == "" )
+		
+		results = []
+		for line in line_iter:
+			if line=="": break
+			name,*numbers,last = line.split(self.sep)
+			format_assert( len(wells) == len(numbers) )
 			format_assert( last == "" )
-			format_assert( label == "Time" )
-			with ValueError_to_FormatMismatch():
-				times = [ parse_time(time) for time in times ]
-				label,*temperatures,last = next(line_iter).split(self.sep)
-			format_assert( last == "" )
-			format_assert( label == "T° "+channel )
-			format_assert( len(temperatures) == len(times) )
-			with ValueError_to_FormatMismatch():
-				temperatures = [ float(temperature) for temperature in temperatures ]
 			
-			results = []
-			wells = []
-			for line in line_iter:
-				if line=="": break
-				with ValueError_to_FormatMismatch():
-					well,*numbers,last = line.split(self.sep)
-					numbers = [ parse_number(number) for number in numbers ]
-				format_assert( last == "" )
-				format_assert( len(numbers) == len(times) )
-				wells.append(well)
-				results.append(numbers)
+			for attempt in TryFormats():
+				with attempt as format_parser:
+					numbers = [ format_parser(number) for number in numbers ]
 			
-			for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
-				if i>0 and time==0:
-					break
-				self[-1]._add_temperature(time,channel,temperature)
-				for well,number in zip(wells,numbers):
-					self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
+			results.append((name,numbers))
+		
+		for name,numbers in results:
+			for (row,col),number in zip(wells,numbers):
+				self[-1]._add_result(name,row,col,number)
 	
-	def _parse_raw_data_matrix(self):
-		with self._line_buffer as line_iter:
-			channel, _, timestamp = next(line_iter).partition(" - ")
+	def _parse_raw_data_column(self,line_iter):
+		channel = next(line_iter)
+		format_assert( self.sep not in channel )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			Time,Temp,*wells = next(line_iter).split(self.sep)
+		format_assert( Time == "Time" )
+		format_assert( Temp == "T° "+channel )
+		
+		results = []
+		while line:=next(line_iter):
 			with ValueError_to_FormatMismatch():
-				number,time = parse_timestamp(timestamp)
-				format_assert( (number,time) == parse_timestamp(next(line_iter)) )
-				empty,*cols = next(line_iter).split(self.sep)
-				format_assert( empty == "" )
-				cols = [ int(col) for col in cols ]
-			format_assert( cols==list(range(1,len(cols)+1)) )
-			format_assert( cols )
-			
-			results = []
-			for line,expected_row in zip(line_iter,row_iter()):
-				if line=="": break
-				row,*numbers,label = line.split(self.sep)
-				format_assert( len(numbers) == len(cols) )
-				format_assert( row == expected_row )
-				format_assert( label == f"{channel} Read#{number}" )
-				with ValueError_to_FormatMismatch():
-					numbers = [ parse_number(number) for number in numbers ]
-				results.append((row,numbers))
-			
-			if time==0 and number>0:
-				for _,numbers in results:
-					format_assert( all(np.isnan(numbers)) )
-			else:
-				for row,numbers in results:
-					for col,number in zip(cols,numbers):
-						self[-1]._add_raw_result(channel,row,col,number,time)
-
-	def _parse_single_matrix(self):
-		with self._line_buffer as line_iter:
-			channel = next(line_iter)
-			format_assert( self.sep not in channel )
-			
+				time,temperature,*numbers = line.split(self.sep)
+				numbers = [ parse_number(number) for number in numbers ]
+				time = parse_time(time)
+				temperature = parse_number(temperature)
+			format_assert( len(numbers) == len(wells) )
+			results.append((time,temperature,numbers))
+		
+		for time,temperature,numbers in results:
+			if time==0 and all(np.isnan(numbers)):
+				continue
+			self[-1]._add_temperature(time,channel,temperature)
+			for well,number in zip(wells,numbers):
+				self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
+	
+	def _parse_raw_data_row(self,line_iter):
+		channel = next(line_iter)
+		format_assert( self.sep not in channel )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			label,*times,last = next(line_iter).split(self.sep)
+		format_assert( last == "" )
+		format_assert( label == "Time" )
+		with ValueError_to_FormatMismatch():
+			times = [ parse_time(time) for time in times ]
+			label,*temperatures,last = next(line_iter).split(self.sep)
+		format_assert( last == "" )
+		format_assert( label == "T° "+channel )
+		format_assert( len(temperatures) == len(times) )
+		with ValueError_to_FormatMismatch():
+			temperatures = [ float(temperature) for temperature in temperatures ]
+		
+		results = []
+		wells = []
+		for line in line_iter:
+			if line=="": break
 			with ValueError_to_FormatMismatch():
-				empty,*cols = next(line_iter).split(self.sep)
-				cols = [ int(col) for col in cols ]
+				well,*numbers,last = line.split(self.sep)
+				numbers = [ parse_number(number) for number in numbers ]
+			format_assert( last == "" )
+			format_assert( len(numbers) == len(times) )
+			wells.append(well)
+			results.append(numbers)
+		
+		for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
+			if i>0 and time==0:
+				break
+			self[-1]._add_temperature(time,channel,temperature)
+			for well,number in zip(wells,numbers):
+				self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
+	
+	def _parse_raw_data_matrix(self,line_iter):
+		channel, _, timestamp = next(line_iter).partition(" - ")
+		with ValueError_to_FormatMismatch():
+			number,time = parse_timestamp(timestamp)
+			format_assert( (number,time) == parse_timestamp(next(line_iter)) )
+			empty,*cols = next(line_iter).split(self.sep)
 			format_assert( empty == "" )
-			format_assert( cols )
-			format_assert( cols==list(range(1,len(cols)+1)) )
-			
-			results = []
-			for line,expected_row in zip(line_iter,row_iter()):
-				if line=="": break
-				with ValueError_to_FormatMismatch():
-					row,*numbers,label = line.split(self.sep)
-				format_assert( label == channel )
-				format_assert( row == expected_row )
-				
-				with ValueError_to_FormatMismatch():
-					numbers = [ parse_number(number) for number in numbers ]
-				
-				results.append((row,numbers))
-			
+			cols = [ int(col) for col in cols ]
+		format_assert( cols==list(range(1,len(cols)+1)) )
+		format_assert( cols )
+		
+		results = []
+		for line,expected_row in zip(line_iter,row_iter()):
+			if line=="": break
+			row,*numbers,label = line.split(self.sep)
+			format_assert( len(numbers) == len(cols) )
+			format_assert( row == expected_row )
+			format_assert( label == f"{channel} Read#{number}" )
+			with ValueError_to_FormatMismatch():
+				numbers = [ parse_number(number) for number in numbers ]
+			results.append((row,numbers))
+		
+		if time==0 and number>0:
+			for _,numbers in results:
+				format_assert( all(np.isnan(numbers)) )
+		else:
 			for row,numbers in results:
 				for col,number in zip(cols,numbers):
-					self[-1]._add_raw_result(channel,row,col,number)
+					self[-1]._add_raw_result(channel,row,col,number,time)
 	
-	def _parse_single_row(self):
-		with self._line_buffer as line_iter:
-			channel = next(line_iter)
-			format_assert( self.sep not in channel )
-			format_assert( next(line_iter) == "" )
-			format_assert( next(line_iter) == "Well"+self.sep+channel )
-			
-			results = []
-			for line in line_iter:
-				if line=="": break
-				well,number = line.split(self.sep)
-				with ValueError_to_FormatMismatch():
-					number = parse_number(number)
-					row,col = split_well_name(well)
-				results.append((row,col,number))
-			
-			for row,col,number in results:
-				self[-1]._add_raw_result(channel,row,col,number)
-	
-	def _parse_single_column(self):
-		with self._line_buffer as line_iter:
-			channel = next(line_iter)
-			format_assert( self.sep not in channel )
-			format_assert( next(line_iter) == "" )
-			
+	def _parse_single_matrix(self,line_iter):
+		channel = next(line_iter)
+		format_assert( self.sep not in channel )
+		
+		with ValueError_to_FormatMismatch():
+			empty,*cols = next(line_iter).split(self.sep)
+			cols = [ int(col) for col in cols ]
+		format_assert( empty == "" )
+		format_assert( cols )
+		format_assert( cols==list(range(1,len(cols)+1)) )
+		
+		results = []
+		for line,expected_row in zip(line_iter,row_iter()):
+			if line=="": break
 			with ValueError_to_FormatMismatch():
-				Well,*wells,last = next(line_iter).split(self.sep)
-				wells = [ split_well_name(well) for well in wells ]
-			format_assert( Well == "Well" )
-			format_assert( last == "" )
+				row,*numbers,label = line.split(self.sep)
+			format_assert( label == channel )
+			format_assert( row == expected_row )
 			
-			channel_2,*numbers,last = next(line_iter).split(self.sep)
-			format_assert( last == "" )
-			format_assert( channel_2 == channel )
 			with ValueError_to_FormatMismatch():
 				numbers = [ parse_number(number) for number in numbers ]
 			
-			format_assert( next(line_iter) == "" )
-			
-			for (row,col),number in zip(wells,numbers):
+			results.append((row,numbers))
+		
+		for row,numbers in results:
+			for col,number in zip(cols,numbers):
 				self[-1]._add_raw_result(channel,row,col,number)
+	
+	def _parse_single_row(self,line_iter):
+		channel = next(line_iter)
+		format_assert( self.sep not in channel )
+		format_assert( next(line_iter) == "" )
+		format_assert( next(line_iter) == "Well"+self.sep+channel )
+		
+		results = []
+		for line in line_iter:
+			if line=="": break
+			well,number = line.split(self.sep)
+			with ValueError_to_FormatMismatch():
+				number = parse_number(number)
+				row,col = split_well_name(well)
+			results.append((row,col,number))
+		
+		for row,col,number in results:
+			self[-1]._add_raw_result(channel,row,col,number)
+	
+	def _parse_single_column(self,line_iter):
+		channel = next(line_iter)
+		format_assert( self.sep not in channel )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			Well,*wells,last = next(line_iter).split(self.sep)
+			wells = [ split_well_name(well) for well in wells ]
+		format_assert( Well == "Well" )
+		format_assert( last == "" )
+		
+		channel_2,*numbers,last = next(line_iter).split(self.sep)
+		format_assert( last == "" )
+		format_assert( channel_2 == channel )
+		with ValueError_to_FormatMismatch():
+			numbers = [ parse_number(number) for number in numbers ]
+		
+		format_assert( next(line_iter) == "" )
+		
+		for (row,col),number in zip(wells,numbers):
+			self[-1]._add_raw_result(channel,row,col,number)
 
 
