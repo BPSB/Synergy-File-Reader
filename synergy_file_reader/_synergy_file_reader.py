@@ -63,6 +63,9 @@ class TryFormats(object):
 			raise FormatMismatch
 
 class SynergyResult(object):
+	"""
+	A single well-wise result.
+	"""
 	def __init__(self):
 		self.data = {}
 		self.rows = []
@@ -133,7 +136,10 @@ class SynergyResult(object):
 		return self.data[self._convert_index(index)]
 
 
-class SynergyRead(SynergyResult):
+class SynergyPlate(SynergyResult):
+	"""
+	Data for a single plate.
+	"""
 	def __init__(self):
 		super().__init__()
 		self.metadata = {}
@@ -257,7 +263,7 @@ class SynergyRead(SynergyResult):
 			return min(all_temps),max(all_temps)
 	
 	def __repr__(self):
-		return(f"SynergyRead( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data}, {self.results} )")
+		return(f"SynergyPlate( {self.metadata}, {self.times}, {self.temperatures}, {self.raw_data}, {self.results} )")
 	
 	def plot(self, *,
 			channels=None, colours=None,
@@ -394,7 +400,7 @@ class SynergyFile(list):
 	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
 		super().__init__()
 		self.sep = separator
-		self._new_read()
+		self._new_plate()
 		
 		with open(filename,"r",encoding=encoding) as f:
 			self._line_buffer = LineBuffer(f.read().splitlines())
@@ -423,15 +429,15 @@ class SynergyFile(list):
 				except FormatMismatch:
 					continue
 				except RepeatingData:
-					self._new_read()
+					self._new_plate()
 					break
 				else:
 					break
 			else:
 				raise ValueError("File does not appear to have a valid or implemented format.")
 	
-	def _new_read(self):
-		self.append(SynergyRead())
+	def _new_plate(self):
+		self.append(SynergyPlate())
 	
 	def _parse_metadata(self,line_iter):
 		new_metadata = {}

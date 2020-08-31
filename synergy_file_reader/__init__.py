@@ -1,4 +1,4 @@
-from ._synergy_file_reader import SynergyFile, SynergyRead
+from ._synergy_file_reader import SynergyFile, SynergyPlate, SynergyResult
 
 try:
 	from .version import version as __version__

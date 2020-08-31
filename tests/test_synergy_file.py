@@ -16,50 +16,50 @@ import numpy as np
 def test_time_series(filename,temperature_ts):
 	data = SynergyFile(path.join("time_series",filename))
 	assert len(data)==1
-	read = data[0]
+	plate = data[0]
 	
-	assert read.metadata["Software Version"] == (3,2,1)
-	assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
-	assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
-	assert read.metadata["Plate Number"] == "Plate 1"
-	assert read.metadata["Reader Type"] == "Synergy H1"
-	assert read.metadata["Reader Serial Number"] == "18092726"
-	assert read.metadata["Reading Type"] == "Reader"
-	assert read.metadata["procedure"] == "foo\nbar\nquz"
+	assert plate.metadata["Software Version"] == (3,2,1)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "18092726"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
 	
-	assert read.metadata["datetime"] == datetime(2020,7,23,17,40,7)
+	assert plate.metadata["datetime"] == datetime(2020,7,23,17,40,7)
 	
-	assert read.channels == ["OD:600"]
-	assert read.rows == list("ABCDEFGH")
-	assert read.cols == list(range(1,13))
+	assert plate.channels == ["OD:600"]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
 	
-	times = read.times["OD:600"]
+	times = plate.times["OD:600"]
 	assert times[0] == 9*60+10
 	assert times[-1] == 17*3600+29*60+10
 	assert np.all( np.diff(times)==10*60 )
 	
 	if temperature_ts:
-		temps = read.temperatures["OD:600"]
+		temps = plate.temperatures["OD:600"]
 		assert len(times) == len(temps)
 		assert temps[ 0] == 30.0
 		assert temps[-1] == 30.1
 		assert temps[ 5] == 30.1
-		assert read.temperature_range == (30.0,30.1)
+		assert plate.temperature_range == (30.0,30.1)
 	else:
-		assert read.temperature_range == ( 0.0,30.1)
+		assert plate.temperature_range == ( 0.0,30.1)
 	
-	assert read["C12" ,"OD:600"][2] == 0.088
-	assert read["C",12,"OD:600"][2] == 0.088
-	assert read["C",12         ][2] == 0.088
-	assert read["C12"          ][2] == 0.088
-	assert read["c12" ,"OD:600"][2] == 0.088
+	assert plate["C12" ,"OD:600"][2] == 0.088
+	assert plate["C",12,"OD:600"][2] == 0.088
+	assert plate["C",12         ][2] == 0.088
+	assert plate["C12"          ][2] == 0.088
+	assert plate["c12" ,"OD:600"][2] == 0.088
 	
-	assert read["A1" ][ 0] == 0.093
-	assert read["H12"][-1] == 0.099
+	assert plate["A1" ][ 0] == 0.093
+	assert plate["H12"][-1] == 0.099
 	
-	assert read.results["Max V"]["D",2,"OD:600"] == -0.060
-	assert read.results["t at Max V"]["H11","OD:600"] == 5050
-	assert read.results["t at Max V"]["H11"] == 5050
+	assert plate.results["Max V"]["D",2,"OD:600"] == -0.060
+	assert plate.results["t at Max V"]["H11","OD:600"] == 5050
+	assert plate.results["t at Max V"]["H11"] == 5050
 
 
 @mark.parametrize(
@@ -76,42 +76,42 @@ def test_multiple_observables(filename,temperature_ts,separator):
 			separator
 		)
 	assert len(data)==1
-	read = data[0]
+	plate = data[0]
 	
-	assert read.metadata["Software Version"] == (3,2,1)
-	assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
-	assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
-	assert read.metadata["Plate Number"] == "Plate 1"
-	assert read.metadata["Reader Type"] == "Synergy H1"
-	assert read.metadata["Reader Serial Number"] == "18092726"
-	assert read.metadata["Reading Type"] == "Reader"
-	assert read.metadata["procedure"] == "foo\tbar\nquz"
+	assert plate.metadata["Software Version"] == (3,2,1)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "18092726"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\tbar\nquz"
 	
-	assert read.metadata["datetime"] == datetime(2020,7,24,15,27,56)
+	assert plate.metadata["datetime"] == datetime(2020,7,24,15,27,56)
 	
-	assert read.channels == ["OD:600","485,528","530,580"]
-	assert read.rows == list("ABCDEFGH")
-	assert read.cols == list(range(1,13))
+	assert plate.channels == ["OD:600","485,528","530,580"]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
 	
 	for channel,offset in [ ("OD:600",108), ("485,528",159), ("530,580",228) ]:
-		times = read.times[channel]
+		times = plate.times[channel]
 		assert times[0] == offset
 		assert times[-1] == offset+20*60
 		assert np.all( np.diff(times)==5*60 )
 	
 	if temperature_ts:
-		for channel in read.channels:
-			temps = read.temperatures[channel]
-			assert len(read.times[channel]) == len(temps)
-			assert all( temp==30.0 for temp in temps)
-	assert read.temperature_range == (30.0,30.0)
+		for channel in plate.channels:
+			temps = plate.temperatures[channel]
+			assert len(plate.times[channel]) == len(temps)
+			assert all( temp==30.0 for temp in temps )
+	assert plate.temperature_range == (30.0,30.0)
 	
-	assert read["B12" ,"485,528"][2] == 48
-	assert read["B",12,"485,528"][2] == 48
-	assert read["b12" ,"485,528"][2] == 48
+	assert plate["B12" ,"485,528"][2] == 48
+	assert plate["B",12,"485,528"][2] == 48
+	assert plate["b12" ,"485,528"][2] == 48
 	
-	assert read["H",12,"530,580"][4] == 28
-	assert read["C",2,"OD:600"][4] == 0.085
+	assert plate["H",12,"530,580"][4] == 28
+	assert plate["C",2,"OD:600"][4] == 0.085
 
 @mark.parametrize(
 		"filename",
@@ -126,43 +126,43 @@ def test_multiple_observables(filename,temperature_ts,separator):
 def test_time_series(filename):
 	data = SynergyFile(path.join("single_measurement",filename))
 	assert len(data)==1
-	read = data[0]
+	plate = data[0]
 	
-	assert read.metadata["Software Version"] == (3,2,1)
-	assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
-	assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
-	assert read.metadata["Plate Number"] == "Plate 1"
-	assert read.metadata["Reader Type"] == "Synergy H1"
-	assert read.metadata["Reader Serial Number"] == "18092726"
-	assert read.metadata["Reading Type"] == "Reader"
-	assert read.metadata["procedure"] == "foo\nbar\nquz"
+	assert plate.metadata["Software Version"] == (3,2,1)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "18092726"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
 	
-	assert read.temperature_range == (30.0,30.1)
+	assert plate.temperature_range == (30.0,30.1)
 	
-	assert read.metadata["datetime"] == datetime(2020,7,24,15,55,48)
+	assert plate.metadata["datetime"] == datetime(2020,7,24,15,55,48)
 	
-	assert read.channels == ["Abs:600","Abs:700","Fluo:485,528"]
-	assert read.rows == list("ABCDEFGH")
-	assert read.cols == list(range(1,13))
+	assert plate.channels == ["Abs:600","Abs:700","Fluo:485,528"]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
 	
-	assert read["B5","Abs:600"] == 0.101
-	assert read["D6","Abs:700"] == 0.097
-	assert read["G11","Fluo:485,528"] == 104
+	assert plate["B5","Abs:600"] == 0.101
+	assert plate["D6","Abs:700"] == 0.097
+	assert plate["G11","Fluo:485,528"] == 104
 
 def test_multiple_with_gain():
 	data = SynergyFile("multiple_with_gain.txt")
 	assert len(data)==2
 	
-	for read in data:
-		assert read.metadata["Software Version"] == (3,3,14)
-		assert read.metadata["Experiment File Path"] == r"C:\foo.xpt"
-		assert read.metadata["Protocol File Path"] == r"C:\bar.prt"
-		assert read.metadata["Plate Number"] == "Plate 1"
-		assert read.metadata["Reader Type"] == "Synergy H1"
-		assert read.metadata["Reader Serial Number"] == "14112519"
-		assert read.metadata["Reading Type"] == "Reader"
-		assert read.rows == list("ABCDEFGH")
-		assert read.cols == list(range(1,13))
+	for plate in data:
+		assert plate.metadata["Software Version"] == (3,3,14)
+		assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+		assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+		assert plate.metadata["Plate Number"] == "Plate 1"
+		assert plate.metadata["Reader Type"] == "Synergy H1"
+		assert plate.metadata["Reader Serial Number"] == "14112519"
+		assert plate.metadata["Reading Type"] == "Reader"
+		assert plate.rows == list("ABCDEFGH")
+		assert plate.cols == list(range(1,13))
 	
 	assert data[0].metadata["procedure"] == "foo\nbar\nquz"
 	assert data[1].metadata["procedure"] == "foo\tbar\nquz"
