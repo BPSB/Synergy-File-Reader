@@ -509,7 +509,8 @@ class SynergyFile(list):
 		format_assert( next(line_iter) == "" )
 		
 		procedure = []
-		while line:=next(line_iter):
+		for line in line_iter:
+			if line=="": break
 			procedure.append(line.replace(self.sep,"\t"))
 		self[-1]._add_metadata( procedure = "\n".join(procedure) )
 	
@@ -624,7 +625,8 @@ class SynergyFile(list):
 		format_assert( Temp == "T° "+channel )
 		
 		results = []
-		while line:=next(line_iter):
+		for line in line_iter:
+			if line=="": break
 			with ValueError_to_FormatMismatch():
 				time,temperature,*numbers = line.split(self.sep)
 				numbers = [ parse_number(number) for number in numbers ]
