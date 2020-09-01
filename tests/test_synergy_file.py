@@ -184,4 +184,33 @@ def test_multiple_with_gain():
 	assert data[1]["G3","CFP:425,475"] == 1566
 	assert np.isnan( data[1]["G11","YFP:485,530"] )
 
+def test_different_format():
+	plate = SynergyFile("different_format.txt")[0]
+	
+	assert plate.metadata["Software Version"] == (3,3,14)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "14112519"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert plate.metadata["datetime"] == datetime(2020,8,26,15,26,39)
+	
+	channel = "OD:600"
+	assert plate.channels == [channel]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
+	
+	times = plate.times[channel]
+	assert times[0] == 550
+	assert np.all( np.diff(times)==10*60 )
+	
+	assert plate.temperatures[channel][0] == 30.0
+	assert plate.temperatures[channel][90] == 30.2
+	
+	assert plate["A1",channel][  0] == 0.091
+	assert plate["D7",channel][126] == 1.442
+
 

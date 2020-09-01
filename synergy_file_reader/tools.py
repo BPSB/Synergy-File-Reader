@@ -67,7 +67,7 @@ class LineBuffer(object):
 			yield line
 	
 	def clear(self):
-		del self.lines[:self.pos]
+		del self.lines[:self.pos+1]
 	
 	def __bool__(self):
 		self.clear_empty_lines()

@@ -29,6 +29,9 @@ def parse_cols(cols):
 	format_assert( cols==list(range(1,len(cols)+1)) )
 	return cols
 
+def assert_temperature_label(label,channel):
+	format_assert( label in [ "T° "+channel, "T "+channel ] )
+
 class ValueError_to_FormatMismatch(object):
 	"""
 		Context manager that catches all ValueErrors within the context and reraises them as FormatMismatches.
@@ -622,7 +625,7 @@ class SynergyFile(list):
 		with ValueError_to_FormatMismatch():
 			Time,Temp,*wells = next(line_iter).split(self.sep)
 		format_assert( Time == "Time" )
-		format_assert( Temp == "T° "+channel )
+		assert_temperature_label(Temp,channel)
 		
 		results = []
 		for line in line_iter:
@@ -655,7 +658,7 @@ class SynergyFile(list):
 			times = [ parse_time(time) for time in times ]
 			label,*temperatures,last = next(line_iter).split(self.sep)
 		format_assert( last == "" )
-		format_assert( label == "T° "+channel )
+		assert_temperature_label(label,channel)
 		format_assert( len(temperatures) == len(times) )
 		with ValueError_to_FormatMismatch():
 			temperatures = [ float(temperature) for temperature in temperatures ]
@@ -768,7 +771,10 @@ class SynergyFile(list):
 		with ValueError_to_FormatMismatch():
 			numbers = [ parse_number(number) for number in numbers ]
 		
-		format_assert( next(line_iter) == "" )
+		try:
+			format_assert( next(line_iter) == "" )
+		except StopIteration:
+			pass
 		
 		for (row,col),number in zip(wells,numbers):
 			self[-1]._add_raw_result(channel,row,col,number)
