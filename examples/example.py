@@ -9,7 +9,7 @@ Our data is located in the file `example_data.txt` in the same folder. We can lo
 	:dedent: 1
 	:lines: 1-2
 
-Now `my_file` is (for all practical purposes) a list containing the individual plates in the file. In our case there is only one such plate, so it’s best to assign it to a seperate variable:
+Now `my_file` is (for all practical purposes) a list containing the individual plates in the file. In our case there is only one such plate, so it’s best to assign it to a separate variable:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
@@ -53,9 +53,9 @@ However, what we usually care about is the rare data. For each well and channel,
 	:dedent: 1
 	:lines: 14-17
 
-Our file includes no aggregated results such as growth rates computed by the Synergy software. If it did, they would be in the dictionary `my_data.results` each value of this result is a `SynergyResult` which can be indexed like `my_plate`.
+Our file includes no aggregated results such as growth rates computed by the Synergy software. If it did, they would be in the dictionary `my_data.results`, each value of which is a `SynergyResult` which can be indexed like `my_plate`.
 
-If we want to access the raw data for all wells, we can do this with the `values` function which mirrors this functionality for dicitonaries. `keys` analogously gives us all well–channel combinations. In the following example, we take the first values from the time series for all wells, and compute the 10\ :sup:`th` percentile of them as a baseline for our measurements:
+If we want to access the raw data for all wells, we can do this with the `values` function which mirrors this functionality for dictionaries. `keys` analogously gives us all well–channel combinations. In the following example, we take the first values from the time series for all wells, and compute the 10\ :sup:`th` percentile of them as a baseline for our measurements:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt

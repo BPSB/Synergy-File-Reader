@@ -26,14 +26,14 @@ If you already exported your files and did not choose for a minimal format, just
 Under the Hood
 --------------
 
-If anybody cares, this module uses trial-and-error parsing. For every type of data block, there is a parser, which throws an error if fed with data that does not matche the format of the type of data block. To parse a file, all of these parsers are applied one by one until one doesn’t throw an error, which is then taken to reflect the true structure of the data. This process is then repeated with the remainder of the file until there are no more lines left.
+If anybody cares, this module uses trial-and-error parsing. For every type of data block, there is a parser, which throws an error if fed with data that does not match the format of the type of data block. To parse a file, all of these parsers are applied one by one until one doesn’t throw an error, which is then taken to reflect the true structure of the data. This process is then repeated with the remainder of the file until there are no more lines left.
 
-This makes the parser rather flexible to expand, but also makes it impossible to pinpoint where exactly the parsing fails. An file simply becomes unparsable once it contains a datablock for which all of the implemented parsers fail.
+This makes the parser rather flexible to expand, but also makes it impossible to pinpoint where exactly the parsing fails. A file simply becomes unparsable once it contains a data block for which all of the implemented parsers fail.
 
 Data Structure
 --------------
 
-`SynergyFile` returns of plates, each of which is a `SynergyPlate`. `SynergyPlate` inherits from `SynergyResult`, which is used for the raw data. The `results` of a `SynergyPlate` are also of the type `SynergyResult`.
+`SynergyFile` is a collection of plates, each of which is a `SynergyPlate`. `SynergyPlate` inherits from `SynergyResult`, which is used for the raw data. The `results` of a `SynergyPlate` are also of the type `SynergyResult`.
 
 Command Reference
 -----------------
