@@ -242,3 +242,7 @@ def test_decomposed_results():
 	assert plate["A1" ,channel][ 0] == 0.091
 	assert plate["E10",channel][46] == 0.666
 	
+	assert plate.results["Max V"]["A",1,"600"] == 0.060
+	assert plate.results["Lagtime"]["G7","600"] == 13094
+	assert plate.results["Lagtime"]["G7"] == 13094
+	

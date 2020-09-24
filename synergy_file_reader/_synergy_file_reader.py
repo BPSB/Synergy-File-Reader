@@ -232,9 +232,9 @@ class SynergyPlate(SynergyResult):
 			self._add_raw_result(name,row,col,value)
 			return
 		
-		if name not in self.results:
-			self.results[name] = SynergyResult()
-		self.results[name][row,col,channel] = value
+		if key not in self.results:
+			self.results[key] = SynergyResult()
+		self.results[key][row,col,channel] = value
 	
 	def _add_metadata(self,**new_metadata):
 		if "Min Temperature" in new_metadata:
