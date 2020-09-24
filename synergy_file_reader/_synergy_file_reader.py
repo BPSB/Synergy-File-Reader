@@ -727,14 +727,15 @@ class SynergyFile(list):
 			format_assert( label == channel )
 			format_assert( row == expected_row )
 			
-			with ValueError_to_FormatMismatch():
-				numbers = [ parse_number(number) for number in numbers ]
+			for attempt in TryFormats():
+				with attempt as format_parser:
+					numbers = [ format_parser(number) for number in numbers ]
 			
 			results.append((row,numbers))
 		
 		for row,numbers in results:
 			for col,number in zip(cols,numbers):
-				self[-1]._add_raw_result(channel,row,col,number)
+				self[-1]._add_result(channel,row,col,number)
 	
 	def _parse_single_row(self,line_iter):
 		channel = next(line_iter)
@@ -746,13 +747,15 @@ class SynergyFile(list):
 		for line in line_iter:
 			if line=="": break
 			well,number = line.split(self.sep)
+			for attempt in TryFormats():
+				with attempt as format_parser:
+					number = format_parser(number)
 			with ValueError_to_FormatMismatch():
-				number = parse_number(number)
 				row,col = split_well_name(well)
 			results.append((row,col,number))
 		
 		for row,col,number in results:
-			self[-1]._add_raw_result(channel,row,col,number)
+			self[-1]._add_result(channel,row,col,number)
 	
 	def _parse_single_column(self,line_iter):
 		channel = next(line_iter)
@@ -768,8 +771,9 @@ class SynergyFile(list):
 		channel_2,*numbers,last = next(line_iter).split(self.sep)
 		format_assert( last == "" )
 		format_assert( channel_2 == channel )
-		with ValueError_to_FormatMismatch():
-			numbers = [ parse_number(number) for number in numbers ]
+		for attempt in TryFormats():
+			with attempt as format_parser:
+				numbers = [ parse_number(number) for number in numbers ]
 		
 		try:
 			format_assert( next(line_iter) == "" )
@@ -777,6 +781,6 @@ class SynergyFile(list):
 			pass
 		
 		for (row,col),number in zip(wells,numbers):
-			self[-1]._add_raw_result(channel,row,col,number)
+			self[-1]._add_result(channel,row,col,number)
 
 
