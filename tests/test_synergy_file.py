@@ -246,3 +246,5 @@ def test_decomposed_results():
 	assert plate.results["Lagtime"]["G7","600"] == 13094
 	assert plate.results["Lagtime"]["G7"] == 13094
 	
+	assert np.isnan( plate.results["Lagtime"]["E5"] )
+

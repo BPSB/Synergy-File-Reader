@@ -25,8 +25,11 @@ def extract_channel(string):
 	return name,channel
 
 def parse_time(time):
-	hours, minutes, seconds = map(int,time.split(":"))
-	return (hours*60+minutes)*60 + seconds
+	if time=="?????":
+		return nan
+	else:
+		hours, minutes, seconds = map(int,time.split(":"))
+		return (hours*60+minutes)*60 + seconds
 
 def parse_number(string):
 	if string:

@@ -4,6 +4,8 @@ from synergy_file_reader.tools import (
 		row_iter,
 		LineBuffer,
 	)
+from math import nan
+import numpy as np
 from pytest import mark, raises
 
 @mark.parametrize(
@@ -46,10 +48,11 @@ def test_extract_bad_channel(string):
 			( "0:01:00",    60),
 			( "1:00:00",  3600),
 			( "2:34:56",  9296),
+			( "?????"  ,   nan),
 		]
 	)
 def test_parse_time(string,seconds):
-	assert parse_time(string) == seconds
+	np.testing.assert_equal( parse_time(string), seconds )
 
 @mark.parametrize(
 		"string, number, seconds",
