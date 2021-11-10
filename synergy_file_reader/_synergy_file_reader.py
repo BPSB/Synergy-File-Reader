@@ -1,8 +1,9 @@
 from synergy_file_reader.tools import (
-		split_well_name, extract_channel,
+		split_well_name, extract_channel, is_sample_id,
 		parse_number, parse_time, parse_timestamp,
-		row_iter,
+		row_iter, VALID_ROWS,
 		LineBuffer,
+		wrap_variant
 	)
 import numpy as np
 from datetime import datetime
@@ -71,29 +72,12 @@ class TryFormats(object):
 		else:
 			raise FormatMismatch
 
-class SynergyResult(object):
-	"""
-	A single well- and channel-wise result.
-	
-	You can index this in different ways, using the well F7 for the channel `"OD"` as an example:
-	
-	* Row letter, column number, and channel separately: `result["F",7,"OD"]`
-	* Well identifier in one string: `result["F7","OD"]`
-	* Using lowercase letters to identify the row: `result["f7","OD"]`
-	* If there is only one channel, you do not need to specify it: `result["F7"]`
-	
-	It comes with the following attributes and methods:
-	
-	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
-	* `channels` is a list of all channels for which recordings exists.
-	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
-
-	"""
-	def __init__(self):
+class SynergyIndexable(object):
+	def __init__(self,sample_ids=None):
 		self.data = {}
 		self.rows = []
 		self.cols = []
-		self.channels = []
+		self.sample_ids = sample_ids
 	
 	def _add_row(self,row):
 		if row not in self.rows:
@@ -107,57 +91,113 @@ class SynergyResult(object):
 				assert col > self.cols[-1]
 			self.cols.append(col)
 	
-	def _add_channel(self,channel):
-		if channel not in self.channels:
-			self.channels.append(channel)
-	
 	def keys(self):
 		return self.data.keys()
 	
 	def values(self):
 		return self.data.values()
 	
-	def _convert_index(self,index):
+	def _normalise_well_index(self,index):
+		"""
+		Returns an iterable of normalised indices from the given index.
+		A normalised index consists of a row, a col, and the further elements of `index`.
+		"""
+		
 		# Avoid string as single index being interpreted as iterable:
-		if isinstance(index,str):
-			index = [index]
+		index = [index] if isinstance(index,str) else list(index)
+		
+		if (
+				    len(index)>=2
+				and (index[0] in VALID_ROWS)
+				and isinstance(index[1],int)
+			):
+				row,col = index[:2]
+				row = row.upper()
+				yield (row,col,*index[2:])
+		elif is_sample_id(index[0]):
+			if self.sample_ids is None:
+				raise ValueError("No layout information available.")
+			results = self.sample_ids[index[0]]
+			for result in results:
+				yield (*result,*index[1:])
 		else:
-			index = list(index)
-		
-		try:
-			row,col = split_well_name(index[0])
-			del index[0]
-		except ValueError:
-			row,col = index[:2]
-			del index[:2]
-		
-		row = row.upper()
-		
-		if len(index)==0:
-			if len(self.channels)==1:
-				channel = self.channels[0]
+			try:
+				row,col = split_well_name(index[0].upper())
+			except ValueError:
+				raise ValueError("Not a valid index.")
 			else:
-				raise ValueError("You must specify a channel as there is more than one in this read.")
-		elif len(index)==1:
-			channel = index[0]
-		else:
-			raise ValueError("Too many indices.")
-		
-		return row,col,channel
-
+				yield (row,col,*index[1:])
+	
+	def _convert_indices(self,index):
+		for row,col,*residual in self._normalise_well_index(index):
+			if residual:
+				raise ValueError("Too many indices.")
+			yield row,col
+	
 	def __setitem__(self,index,result):
-		row,col,channel = self._convert_index(index)
-		if (row,col,channel) in self.keys():
+		indices = list(self._convert_indices(index))
+		if len(indices) != 1:
+			raise ValueError("Index is not unique")
+		if indices[0] in self.keys():
 			raise RepeatingData
-		else:
-			self._add_row(row)
-			self._add_col(col)
-			self._add_channel(channel)
-			self.data[row,col,channel] = result
+		
+		row,col,*residual = indices[0]
+		self._add_row(row)
+		self._add_col(col)
+		self.data[(row,col,*residual)] = result
 	
 	def __getitem__(self,index):
-		return self.data[self._convert_index(index)]
+		indices = list(self._convert_indices(index))
+		if len(indices)==1:
+			return self.data[indices[0]]
+		else:
+			return [ self.data[index] for index in indices ]
 
+class SynergyResult(SynergyIndexable):
+	"""
+	A single well- and channel-wise result.
+	
+	You can index this in different ways, using the well F7 for the channel `"OD"` as an example:
+	
+	* Row letter, column number, and channel separately: `result["F",7,"OD"]`
+	* Well identifier in one string: `result["F7","OD"]`
+	* If there is only one channel, you do not need to specify it: `result["F7"]`
+	* If your plate contains information on sample IDs, you can also use those for indexing: `result["SPL55","OD"]`
+	
+	It comes with the following attributes and methods:
+	
+	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
+	* `channels` is a list of all channels for which recordings exists.
+	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
+	"""
+	
+	def __init__(self,sample_ids=None):
+		super().__init__(sample_ids)
+		self.channels = []
+	
+	def _add_channel(self,channel):
+		if channel not in self.channels:
+			self.channels.append(channel)
+	
+	def _convert_indices(self,index):
+		for row,col,*residual in self._normalise_well_index(index):
+			if len(residual)==0:
+				if len(self.channels)==1:
+					channel = self.channels[0]
+				else:
+					print(index,residual,self.channels)
+					raise ValueError("You must specify a channel as there is more than one in this read.")
+			elif len(residual)==1:
+				channel = residual[0]
+			else:
+				raise ValueError("Too many indices.")
+			
+			yield row,col,channel
+	
+	def __setitem__(self,index,result):
+		super().__setitem__(index,result)
+		_,_,channel = next(self._convert_indices(index))
+		self._add_channel(channel)
 
 class SynergyPlate(SynergyResult):
 	"""
@@ -185,6 +225,8 @@ class SynergyPlate(SynergyResult):
 		self.temperatures = {}
 		self.results = {}
 		self.gains = {}
+		self.sample_ids = None
+		self.layout = None
 	
 	def _add_time(self,time,channel):
 		if self.times is None:
@@ -233,7 +275,7 @@ class SynergyPlate(SynergyResult):
 			return
 		
 		if key not in self.results:
-			self.results[key] = SynergyResult()
+			self.results[key] = SynergyResult(self.sample_ids)
 		self.results[key][row,col,channel] = value
 	
 	def _add_metadata(self,**new_metadata):
@@ -446,16 +488,32 @@ class SynergyFile(list):
 			The separator character used in the file.
 		encoding : string specifying a supported encoding
 			The encoding of the file. This cannot be automatically detected.
+		verbose : boolean
+			whether to detail information about the parsing process. Mostly useful for debugging.
 	"""
-	def __init__(self,filename,separator="\t",encoding="iso-8859-1"):
+	def __init__(self,
+			filename,
+			separator="\t",
+			encoding="iso-8859-1",
+			verbose=False
+		):
 		super().__init__()
 		self.sep = separator
 		self._new_plate()
+		
+		self.verbose = verbose
 		
 		with open(filename,"r",encoding=encoding) as f:
 			self._line_buffer = LineBuffer(f.read().splitlines())
 		
 		self._parse_file()
+	
+	def report(self,message,newline=True):
+		if self.verbose:
+			print(
+					message,
+					end = "\n" if newline else "",
+				)
 	
 	def _parse_file(self):
 		while self._line_buffer:
@@ -472,16 +530,21 @@ class SynergyFile(list):
 					self._parse_procedure,
 					self._parse_gain_values,
 					self._parse_metadata,
+					wrap_variant(self._parse_layout,"conc"),
+					self._parse_layout,
+					self._parse_blank_data,
 				):
 				try:
 					with self._line_buffer as line_iter:
 						parser(line_iter)
-				except FormatMismatch:
+				except FormatMismatch as e:
 					continue
 				except RepeatingData:
+					self.report("Found repeating data with {parser__name__}; created new plate.")
 					self._new_plate()
 					break
 				else:
+					self.report(f"Successful {parser.__name__:<22}")
 					break
 			else:
 				raise ValueError("File does not appear to have a valid or implemented format.")
@@ -782,5 +845,59 @@ class SynergyFile(list):
 		
 		for (row,col),number in zip(wells,numbers):
 			self[-1]._add_result(channel,row,col,number)
+	
+#	@variants(["conc",""])
+	def _parse_layout(self,line_iter,variant=""):
+		format_assert( next(line_iter) == "Layout" )
+		
+		with ValueError_to_FormatMismatch():
+			empty,*cols = next(line_iter).split(self.sep)
+			cols = parse_cols(cols)
+		format_assert( empty == "" )
+		
+		layout = SynergyIndexable()
+		sample_ids = {}
+		expected_rows = row_iter()
+		
+		while True:
+			line = next(line_iter)
+			if line=="": break
+			
+			row  ,*labels ,well_id = line.split(self.sep)
+			format_assert( row == next(expected_rows) )
+			format_assert( empty == "" )
+			if variant=="conc":
+				empty,*condils,concdil = next(line_iter).split(self.sep)
+				format_assert( well_id == "Well ID" )
+				format_assert( concdil == "Conc/Dil" )
+				
+				with ValueError_to_FormatMismatch():
+					condils = [ parse_number(condil) for condil in condils ]
+				
+				ids = [
+						label if np.isnan(condil) else (label,condil)
+						for label,condil in zip(labels,condils)
+					]
+			else:
+				assert variant == ""
+				ids = labels
+			
+			for sample_id,col in zip(ids,cols):
+				layout[row,col] = sample_id
+				try:
+					sample_ids[sample_id].append((row,col))
+				except KeyError:
+					sample_ids[sample_id] = [(row,col)]
+		
+		self[-1].layout = layout
+		self[-1].sample_ids = sample_ids
+	
+	def _parse_blank_data(self,line_iter):
+		first_line = next(line_iter)
+		format_assert( first_line.startswith("Blank ") or "[Blank " in first_line )
+		format_assert( next(line_iter) == "" )
+		for line in line_iter:
+			if line=="": break
+
 
 

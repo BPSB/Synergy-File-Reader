@@ -87,7 +87,7 @@ def extract_channel(string):
 	return name,channel
 
 def parse_time(time):
-	if time=="?????":
+	if time=="?????" or time=="":
 		return nan
 	else:
 		hours, minutes, seconds = map(int,time.split(":"))
@@ -137,4 +137,11 @@ class LineBuffer(object):
 	def __exit__(self, exc_type, exc_value, exc_traceback):
 		if exc_type is None:
 			self.clear()
+
+def wrap_variant(func,variant):
+	def wrapped(*args,**kwargs):
+		return func(*args,variant=variant,**kwargs)
+	wrapped.__name__ = func.__name__ + "_" + variant
+	return wrapped
+
 

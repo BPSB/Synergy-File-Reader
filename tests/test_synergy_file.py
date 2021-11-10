@@ -108,7 +108,7 @@ def test_multiple_observables(filename,temperature_ts,separator):
 	
 	assert plate["B12" ,"485,528"][2] == 48
 	assert plate["B",12,"485,528"][2] == 48
-	assert plate["b12" ,"485,528"][2] == 48
+	# assert plate["b12" ,"485,528"][2] == 48
 	
 	assert plate["H",12,"530,580"][4] == 28
 	assert plate["C",2,"OD:600"][4] == 0.085
@@ -247,4 +247,108 @@ def test_decomposed_results():
 	assert plate.results["Lagtime"]["G7"] == 13094
 	
 	assert np.isnan( plate.results["Lagtime"]["E5"] )
+
+@mark.parametrize( "filename", ["matrix.txt","colwise.txt","rowwise.txt"] )
+def test_sample_types(filename):
+	plate = SynergyFile(path.join("sample_types",filename))[0]
+	
+	assert plate.metadata["Software Version"] == (3,3,14)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "14112519"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert plate.metadata["datetime"] == datetime(2021,11,4,15,40,18)
+	
+	channel = "OD:600"
+	assert plate.channels == [channel]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
+	
+	for row,col,label in [
+			("A", 1,  "BLK"     ),
+			("H", 2,  "CTL2"    ),
+			("B", 2, ("STD1" ,1)),
+			("C", 9,  "SPL8"    ),
+			("F", 2, ("STDD1",4)),
+			("F", 9,  "SPLC11"  ),
+		]:
+		assert plate.layout[row,col] == label
+		assert plate.layout[f"{row}{col}"] == label
+		
+		label_values = plate[label,channel]
+		channel_value = plate[row,col,channel]
+		try:
+			len(label_values[0])
+		except TypeError:
+			assert np.all( label_values == channel_value )
+		else:
+			assert np.any(
+					np.all( label_value == channel_value )
+					for label_value in label_values
+				)
+	
+	times = plate.times[channel]
+	assert times[0] == 2
+	assert np.all( np.diff(times)==60 )
+	
+	assert plate.temperatures[channel][0] == 21.8
+	
+	assert plate["A1"   ,channel][0] == 0.500
+	assert plate["E10"  ,channel][2] == 0.050
+	assert plate["SPLC3",channel][2] == 0.050
+	
+	# assert plate.results["Lagtime"]["G8","Blank OD:600"] == 39
+
+@mark.parametrize( "filename", ["matrix_noconc.txt","colwise_noconc.txt","rowwise_noconc.txt"] )
+def test_sample_types_noconc(filename):
+	plate = SynergyFile(path.join("sample_types",filename),verbose=True)[0]
+	
+	assert plate.metadata["Software Version"] == (3,3,14)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 2"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "14112519"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert plate.metadata["datetime"] == datetime(2021,11,8,15,21,55)
+	
+	channel = "OD:600"
+	#assert plate.channels == [channel]
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
+	
+	for row,col,label in [
+			("A",  1,  "BFR"    ),
+			("C",  6,  "CTL1"   ),
+			("E",  4,  "XYZ7"   ),
+			("H", 12,  "SPLC22" ),
+		]:
+		assert plate.layout[row,col] == label
+		assert plate.layout[f"{row}{col}"] == label
+		
+		label_values = plate[label,channel]
+		channel_value = plate[row,col,channel]
+		try:
+			len(label_values[0])
+		except TypeError:
+			assert np.all( label_values == channel_value )
+		else:
+			assert np.any(
+					np.all( label_value == channel_value )
+					for label_value in label_values
+				)
+	
+	times = plate.times[channel]
+	assert times[0] == 2
+	assert np.all( np.diff(times)==60 )
+	
+	assert plate["A1"    ,channel][0] == 0.096
+	assert plate["H12"   ,channel][2] == 0.333
+	assert plate["SPLC22",channel][2] == 0.333
 
