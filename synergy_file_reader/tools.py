@@ -1,20 +1,82 @@
-from math import nan
+from math import nan, isnan
 from string import ascii_uppercase
+from numbers import Number
+from warnings import warn
+
+def full_row_iter():
+	for letter in ascii_uppercase:
+		yield letter
+	for letter_1 in ascii_uppercase:
+		for letter_2 in ascii_uppercase:
+			yield letter_1+letter_2
+
+def row_iter(exhaust_warning=True):
+	for label in full_row_iter():
+		yield label
+		if label == "CU":
+			if exhaust_warning:
+				warn("Exhausted all possible 99 row labels. Unless you have a plate with exactly 99 rows, this suggests that something went wrong.")
+			break
+
+VALID_ROWS = set(row_iter(exhaust_warning=False))
+
+def split_alpha_and_number(name):
+	if name=="":
+		raise ValueError("Empty name.")
+	elif not name.isascii():
+		raise ValueError("Not an ASCII name")
+	
+	for i in range(len(name)+1):
+		alpha = name[:i]
+		if not alpha.isalpha():
+			continue
+		
+		if name[i:]=="":
+			return alpha,nan
+		
+		if name[i:].isnumeric():
+			try:
+				number = int(name[i:])
+			except ValueError:
+				continue
+			else:
+				return alpha,number
+	else:
+		raise ValueError("Name does not consist of a string plus (optionally) a number.")
 
 def split_well_name(name):
-	if name=="":
-		raise ValueError("Not a proper well name")
+	try:
+		row,col = split_alpha_and_number(name)
+	except ValueError:
+		raise ValueError("Not a proper well name.")
 	
-	for i,c in enumerate(name):
-		if c.isnumeric():
-			break
-	col = name[:i]
-	row = int(name[i:])
+	if not row in VALID_ROWS:
+		raise ValueError("Not a proper row identifier.")
 	
-	if not col.isalpha():
-		raise ValueError("Not a proper well name")
+	if isnan(col):
+		raise ValueError("Number is missing")
 	
-	return col,row
+	return row,col
+
+def is_sample_label_string(label):
+	try:
+		name,number = split_alpha_and_number(label)
+	except ValueError:
+		return False
+	
+	return isnan(number) or (name not in VALID_ROWS)
+
+def is_sample_id(index):
+	if isinstance(index,str):
+		return is_sample_label_string(index)
+	else:
+		try:
+			if len(index)!=2:
+				return False
+		except ValueError:
+			return False
+		else:
+			return is_sample_label_string(index[0]) and isinstance(index[1],Number)
 
 def extract_channel(string):
 	name,_,channel = string.partition("[")
@@ -47,13 +109,6 @@ def parse_timestamp(string):
 		raise ValueError
 	time = parse_time(time[:-1])
 	return number, time
-
-def row_iter():
-	for letter in ascii_uppercase:
-		yield letter
-	for letter_1 in ascii_uppercase:
-		for letter_2 in ascii_uppercase:
-			yield letter_1+letter_2
 
 class LineBuffer(object):
 	def __init__(self,lines):

@@ -1,29 +1,101 @@
 from synergy_file_reader.tools import (
-		split_well_name, extract_channel,
+		row_iter, VALID_ROWS,
+		split_alpha_and_number,
+		split_well_name,
+		is_sample_label_string, is_sample_id,
+		extract_channel,
 		parse_time, parse_timestamp,
-		row_iter,
 		LineBuffer,
 	)
-from math import nan
+from math import nan, isnan
 import numpy as np
 from pytest import mark, raises
+
+def test_row_iter():
+	items = list(row_iter(exhaust_warning=False))
+	assert set(items) == VALID_ROWS
+	assert items[0] == "A"
+	assert items[25] == "Z"
+	assert items[26] == "AA"
+	assert items[28] == "AC"
+	assert items[98] == "CU"
+	assert len(items) == len(VALID_ROWS) == 99
+	assert "CV" not in items
+
+def test_valid_rows():
+	for row in ["A","Z","AA","CU"]:
+		assert row in VALID_ROWS
+	for bad_row in ["","CV","ABC","A1"]:
+		assert bad_row not in VALID_ROWS
+
+@mark.parametrize(
+		"label, alpha, number",
+		[
+			( "A1"    , "A"  ,  1 ),
+			( "B12"   , "B"  , 12 ),
+			( "AA1"   , "AA" ,  1 ),
+			( "XYZ96" , "XYZ", 96 ),
+		]
+	)
+def test_split_alpha_and_number(label,alpha,number):
+	assert split_alpha_and_number(label) == (alpha,number)
+
+def test_split_alpha_and_no_number():
+	alpha,number = split_alpha_and_number("XYZ")
+	assert alpha=="XYZ"
+	assert isnan(number)
+
+@mark.parametrize( "bad_label", ["A 1","ü2","A.1"] )
+def test_split_bad_alpha_and_number(bad_label):
+	with raises(ValueError):
+		split_alpha_and_number(bad_label)
 
 @mark.parametrize(
 		"well, row, col",
 		[
-			( "A1"   , "A"  , 1   ),
-			( "B12"  , "B"  , 12  ),
-			( "AA1"  , "AA" , 1   ),
-			( "ZX137", "ZX" , 137 ),
+			( "A1"   , "A"  ,  1 ),
+			( "B12"  , "B"  , 12 ),
+			( "AA1"  , "AA" ,  1 ),
 		]
 	)
 def test_split_well_name(well,row,col):
 	assert split_well_name(well) == (row,col)
 
-@mark.parametrize("well",["A","1","OD:600"])
-def test_split_bad_well(well):
+@mark.parametrize("bad_well",["A","1","OD:600","CV2"])
+def test_split_bad_well(bad_well):
 	with raises(ValueError):
-		split_well_name(well)
+		split_well_name(bad_well)
+
+@mark.parametrize(
+		"label,result",
+		[
+			( "BLK"     , True  ),
+			( "ABC"     , True  ),
+			( "SPLC11"  , True  ),
+			( "A"       , True  ),
+			( "A1"      , False ),
+			( "CU1"     , False ),
+			( "STD 4"   , False ),
+			( "CV1"     , True  ),
+		]
+	)
+def test_is_sample_label_string(label,result):
+	assert is_sample_label_string(label) == result
+
+@mark.parametrize(
+		"label,result",
+		[
+			( "BLK"     , True  ),
+			( "SPLC11"  , True  ),
+			( "CV12"    , True  ),
+			( "CU12"    , False ),
+			(("STD1" ,1), True  ),
+			(("STD 1",4), False ),
+			(("A1"   ,4), False ),
+		]
+	)
+def test_is_sample_id(label,result):
+	assert is_sample_id(label) == result
 
 @mark.parametrize(
 		"string, name, channel",
@@ -68,14 +140,6 @@ def test_parse_timestamp(string,number,seconds):
 def test_parse_bad_timestamp(string):
 	with raises(ValueError):
 		parse_timestamp(string)
-
-def test_row_iter():
-	items = list(row_iter())
-	assert items[0] == "A"
-	assert items[25] == "Z"
-	assert items[26] == "AA"
-	assert items[28] == "AC"
-	assert items[81] == "CD"
 
 def test_LineBuffer():
 	lb = LineBuffer(["","","a","b","","c","","","d","e","","","f",""])
