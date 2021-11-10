@@ -7,6 +7,7 @@ from synergy_file_reader.tools import (
 	)
 import numpy as np
 from datetime import datetime
+from warnings import warn
 
 format_parsers = [parse_time, parse_number]
 
@@ -169,6 +170,7 @@ class SynergyResult(SynergyIndexable):
 	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
 	* `channels` is a list of all channels for which recordings exists.
 	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
+	* If your plate contains information on sample IDs, `sample_ids` contains the mappin of sample IDs to wells.
 	"""
 	
 	def __init__(self,sample_ids=None):
@@ -520,18 +522,24 @@ class SynergyFile(list):
 			for parser in (
 					self._parse_raw_data_matrix,
 					self._parse_raw_data_row,
+					wrap_variant(self._parse_raw_data_row,"blank"),
 					self._parse_raw_data_column,
+					wrap_variant(self._parse_raw_data_column,"blank"),
 					self._parse_results_matrix,
 					self._parse_results_row,
+					wrap_variant(self._parse_results_row,"well_id"),
+					wrap_variant(self._parse_results_row,"well_id_and_conc"),
 					self._parse_results_column,
+					wrap_variant(self._parse_results_column,"well_id"),
+					wrap_variant(self._parse_results_column,"well_id_and_conc"),
 					self._parse_single_matrix,
 					self._parse_single_row,
 					self._parse_single_column,
 					self._parse_procedure,
 					self._parse_gain_values,
 					self._parse_metadata,
-					wrap_variant(self._parse_layout,"conc"),
 					self._parse_layout,
+					wrap_variant(self._parse_layout,"conc"),
 					self._parse_blank_data,
 				):
 				try:
@@ -627,19 +635,40 @@ class SynergyFile(list):
 			for col,number in zip(cols,numbers):
 				self[-1]._add_result(name,row,col,number)
 	
-	def _parse_results_row(self,line_iter):
+	def _parse_results_row(self,line_iter,variant=""):
 		format_assert( next(line_iter) == "Results" )
 		format_assert( next(line_iter) == "" )
 		
-		with ValueError_to_FormatMismatch():
-			Well,*names = next(line_iter).split(self.sep)
+		if variant=="well_id":
+			with ValueError_to_FormatMismatch():
+				Well_ID,Well,*names = next(line_iter).split(self.sep)
+			format_assert( Well_ID=="Well ID" )
+		elif variant=="well_id_and_conc":
+			with ValueError_to_FormatMismatch():
+				Well_ID,Well,Concdil,*names = next(line_iter).split(self.sep)
+			format_assert( Well_ID=="Well ID" )
+			format_assert( Concdil=="Conc/Dil" )
+		else:
+			with ValueError_to_FormatMismatch():
+				Well,*names = next(line_iter).split(self.sep)
 		format_assert( Well=="Well" )
 		
 		results = []
 		for line in line_iter:
 			if line=="": break
 			
-			well,*numbers = line.split(self.sep)
+			if variant=="well_id":
+				well_id,well,*numbers = line.split(self.sep)
+				format_assert( well_id == self[-1].layout[well] )
+			elif variant=="well_id_and_conc":
+				well_id,well,conc,*numbers = line.split(self.sep)
+				if conc:
+					format_assert( (well_id,conc) == self[-1].layout[well] )
+				else:
+					format_assert( well_id == self[-1].layout[well] )
+			else:
+				well,*numbers = line.split(self.sep)
+
 			with ValueError_to_FormatMismatch():
 				row,col = split_well_name(well)
 			
@@ -653,15 +682,27 @@ class SynergyFile(list):
 		for name,row,col,number in results:
 			self[-1]._add_result(name,row,col,number)
 	
-	def _parse_results_column(self,line_iter):
+	def _parse_results_column(self,line_iter,variant=""):
 		format_assert( next(line_iter) == "Results" )
 		format_assert( next(line_iter) == "" )
+		
+		if variant.startswith("well_id"):
+			with ValueError_to_FormatMismatch():
+				Well_ID,*ids,last = next(line_iter).split(self.sep)
+			format_assert( Well_ID == "Well ID" )
+			format_assert( last == "" )
 		
 		with ValueError_to_FormatMismatch():
 			Well,*wells,last = next(line_iter).split(self.sep)
 			wells = [ split_well_name(well) for well in wells ]
 		format_assert( Well == "Well" )
 		format_assert( last == "" )
+		
+		if variant == "well_id_and_conc":
+			with ValueError_to_FormatMismatch():
+				concdil,*concs,last = next(line_iter).split(self.sep)
+			format_assert( concdil == "Conc/Dil" )
+			format_assert( last == "" )
 		
 		results = []
 		for line in line_iter:
@@ -680,35 +721,45 @@ class SynergyFile(list):
 			for (row,col),number in zip(wells,numbers):
 				self[-1]._add_result(name,row,col,number)
 	
-	def _parse_raw_data_column(self,line_iter):
+	def _parse_raw_data_column(self,line_iter,variant=""):
 		channel = next(line_iter)
 		format_assert( self.sep not in channel )
 		format_assert( next(line_iter) == "" )
 		
-		with ValueError_to_FormatMismatch():
-			Time,Temp,*wells = next(line_iter).split(self.sep)
+		if variant=="blank":
+			format_assert( channel.startswith("Blank ") )
+			with ValueError_to_FormatMismatch():
+				Time,*wells = next(line_iter).split(self.sep)
+		else:
+			with ValueError_to_FormatMismatch():
+				Time,Temp,*wells = next(line_iter).split(self.sep)
+			assert_temperature_label(Temp,channel)
 		format_assert( Time == "Time" )
-		assert_temperature_label(Temp,channel)
 		
 		results = []
 		for line in line_iter:
 			if line=="": break
 			with ValueError_to_FormatMismatch():
-				time,temperature,*numbers = line.split(self.sep)
+				if variant=="blank":
+					time,*numbers = line.split(self.sep)
+					temperature = np.nan
+				else:
+					time,temperature,*numbers = line.split(self.sep)
+					temperature = parse_number(temperature)
 				numbers = [ parse_number(number) for number in numbers ]
 				time = parse_time(time)
-				temperature = parse_number(temperature)
 			format_assert( len(numbers) == len(wells) )
 			results.append((time,temperature,numbers))
 		
 		for time,temperature,numbers in results:
 			if time==0 and all(np.isnan(numbers)):
 				continue
-			self[-1]._add_temperature(time,channel,temperature)
+			if variant!="blank":
+				self[-1]._add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
 				self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
 	
-	def _parse_raw_data_row(self,line_iter):
+	def _parse_raw_data_row(self,line_iter,variant=""):
 		channel = next(line_iter)
 		format_assert( self.sep not in channel )
 		format_assert( next(line_iter) == "" )
@@ -719,12 +770,17 @@ class SynergyFile(list):
 		format_assert( label == "Time" )
 		with ValueError_to_FormatMismatch():
 			times = [ parse_time(time) for time in times ]
-			label,*temperatures,last = next(line_iter).split(self.sep)
-		format_assert( last == "" )
-		assert_temperature_label(label,channel)
-		format_assert( len(temperatures) == len(times) )
-		with ValueError_to_FormatMismatch():
-			temperatures = [ float(temperature) for temperature in temperatures ]
+		
+		if variant == "blank":
+			temperatures = np.full_like(times,np.nan)
+		else:
+			with ValueError_to_FormatMismatch():
+				label,*temperatures,last = next(line_iter).split(self.sep)
+				temperatures = [ float(temperature) for temperature in temperatures ]
+			format_assert( last == "" )
+				
+			assert_temperature_label(label,channel)
+			format_assert( len(temperatures) == len(times) )
 		
 		results = []
 		wells = []
@@ -741,7 +797,8 @@ class SynergyFile(list):
 		for i,(time,temperature,*numbers) in enumerate(zip(times,temperatures,*results)):
 			if i>0 and time==0:
 				break
-			self[-1]._add_temperature(time,channel,temperature)
+			if variant != "blank":
+				self[-1]._add_temperature(time,channel,temperature)
 			for well,number in zip(wells,numbers):
 				self[-1]._add_raw_result(channel,*split_well_name(well),number,time)
 	
@@ -846,7 +903,6 @@ class SynergyFile(list):
 		for (row,col),number in zip(wells,numbers):
 			self[-1]._add_result(channel,row,col,number)
 	
-#	@variants(["conc",""])
 	def _parse_layout(self,line_iter,variant=""):
 		format_assert( next(line_iter) == "Layout" )
 		
@@ -894,10 +950,12 @@ class SynergyFile(list):
 	
 	def _parse_blank_data(self,line_iter):
 		first_line = next(line_iter)
-		format_assert( first_line.startswith("Blank ") or "[Blank " in first_line )
+		format_assert( "[Blank " in first_line )
 		format_assert( next(line_iter) == "" )
 		for line in line_iter:
 			if line=="": break
+		
+		warn("Data calculated from blanks will be ignored and not parsed.")
 
 
 

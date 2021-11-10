@@ -4,6 +4,8 @@ from pytest import mark
 from os import path
 import numpy as np
 
+pytestmark = mark.filterwarnings("ignore:Data.*blanks")
+
 @mark.parametrize(
 		  "filename,       temperature_ts",
 	[
@@ -108,7 +110,6 @@ def test_multiple_observables(filename,temperature_ts,separator):
 	
 	assert plate["B12" ,"485,528"][2] == 48
 	assert plate["B",12,"485,528"][2] == 48
-	# assert plate["b12" ,"485,528"][2] == 48
 	
 	assert plate["H",12,"530,580"][4] == 28
 	assert plate["C",2,"OD:600"][4] == 0.085
@@ -264,7 +265,7 @@ def test_sample_types(filename):
 	assert plate.metadata["datetime"] == datetime(2021,11,4,15,40,18)
 	
 	channel = "OD:600"
-	assert plate.channels == [channel]
+	assert channel in plate.channels
 	assert plate.rows == list("ABCDEFGH")
 	assert plate.cols == list(range(1,13))
 	
@@ -300,12 +301,10 @@ def test_sample_types(filename):
 	assert plate["A1"   ,channel][0] == 0.500
 	assert plate["E10"  ,channel][2] == 0.050
 	assert plate["SPLC3",channel][2] == 0.050
-	
-	# assert plate.results["Lagtime"]["G8","Blank OD:600"] == 39
 
 @mark.parametrize( "filename", ["matrix_noconc.txt","colwise_noconc.txt","rowwise_noconc.txt"] )
 def test_sample_types_noconc(filename):
-	plate = SynergyFile(path.join("sample_types",filename),verbose=True)[0]
+	plate = SynergyFile(path.join("sample_types",filename))[0]
 	
 	assert plate.metadata["Software Version"] == (3,3,14)
 	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
@@ -319,7 +318,7 @@ def test_sample_types_noconc(filename):
 	assert plate.metadata["datetime"] == datetime(2021,11,8,15,21,55)
 	
 	channel = "OD:600"
-	#assert plate.channels == [channel]
+	assert channel in plate.channels
 	assert plate.rows == list("ABCDEFGH")
 	assert plate.cols == list(range(1,13))
 	
