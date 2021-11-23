@@ -51,7 +51,7 @@ However, what we usually care about is the rare data. For each well and channel,
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
 	:dedent: 1
-	:lines: 14-17
+	:lines: 14-16
 
 Our file includes no aggregated results such as growth rates computed by the Synergy software. If it did, they would be in the dictionary `my_data.results`, each value of which is a `SynergyResult` which can be indexed like `my_plate`.
 
@@ -60,28 +60,28 @@ If we want to access the raw data for all wells, we can do this with the `values
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
 	:dedent: 1
-	:lines: 19-20
+	:lines: 18-19
 
 The attributes `rows` and `cols` facilitate easy iterations over all rows or columns, respectively. We here compute the element-wise median of all time series in the first row (“A”), to use as a reference for comparisons:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
 	:dedent: 1
-	:lines: 21
+	:lines: 20
 
 Finally, we `plot` our data. We here specify that the `baseline` we computed before shall be subtracted from all time series. Moreover, our `reference` should appear in each plot:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
 	:dedent: 1
-	:lines: 23-30
+	:lines: 22-29
 
 The remaining arguments are hopefully self-explanatory and also explained in the documentation of `plot`. `fig` is a Matplotlib figure object with all the functionality that comes with that. For example, we can use `savefig` to export our plot to a file:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
 	:dedent: 1
-	:lines: 31
+	:lines: 30
 
 And this is what our plot looks like:
 
@@ -104,7 +104,6 @@ if __name__ == "__main__":
 	print(my_plate.metadata["Software Version"])
 	
 	print(my_plate["C3",channel])
-	print(my_plate["c3",channel])
 	print(my_plate["C",3,channel])
 	print(my_plate["C3"])
 	
