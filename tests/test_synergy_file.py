@@ -285,7 +285,7 @@ def test_sample_types(filename):
 		try:
 			len(label_values[0])
 		except TypeError:
-			assert np.all( label_values == channel_value )
+			assert np.any( label_values == channel_value )
 		else:
 			assert np.any(
 					np.all( label_value == channel_value )
@@ -336,7 +336,7 @@ def test_sample_types_noconc(filename):
 		try:
 			len(label_values[0])
 		except TypeError:
-			assert np.all( label_values == channel_value )
+			assert np.any( label_values == channel_value )
 		else:
 			assert np.any(
 					np.all( label_value == channel_value )
@@ -350,4 +350,50 @@ def test_sample_types_noconc(filename):
 	assert plate["A1"    ,channel][0] == 0.096
 	assert plate["H12"   ,channel][2] == 0.333
 	assert plate["SPLC22",channel][2] == 0.333
+
+@mark.parametrize( "filename", ["single_matrix.txt","single_col.txt","single_row.txt"] )
+def test_sample_types_single(filename):
+	plate = SynergyFile(path.join("sample_types",filename),verbose=True)[0]
+	
+	assert plate.metadata["Software Version"] == (3,3,14)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r""
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "14112519"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert plate.metadata["datetime"] == datetime(2021,11,16,14,16,33)
+	
+	channel = "450"
+	assert channel in plate.channels
+	# assert plate.rows == list("ABCDEFG")
+	# assert plate.cols == list(range(1,13))
+	
+	for row,col,label in [
+			("B",  4,   "BLK"       ),
+			("E",  3,   "CTL1"      ),
+			("F",  7,  ("SPL3",2.5) ),
+			("G",  7,  ("SPL3",3.7) ),
+		]:
+		assert plate.layout[row,col] == label
+		assert plate.layout[f"{row}{col}"] == label
+		
+		label_values = plate[label,channel]
+		channel_value = plate[row,col,channel]
+		try:
+			len(label_values[0])
+		except TypeError:
+			print(label_values,channel_value)
+			assert np.any( np.array(label_values) == channel_value )
+		else:
+			assert np.any(
+					np.all( label_value == channel_value )
+					for label_value in label_values
+				)
+	
+	assert plate["A1" ,channel] == 0.102
+	assert plate["E3" ,channel] == 1.672
+	assert plate["G11",channel] == 0.102
 

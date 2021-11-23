@@ -1,0 +1,121 @@
+
+
+Software Version	3.03.14
+
+
+
+Experiment File Path:	C:\foo.xpt
+Protocol File Path:	
+
+
+
+Plate Number	Plate 1
+Date	2021-11-16
+Time	14:16:33
+Reader Type:	Synergy H1
+Reader Serial Number:	14112519
+Reading Type	Reader
+
+Procedure Details
+
+foo
+bar
+quz
+
+Layout
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+B	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+C	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+D	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK				Well ID
+													Conc/Dil
+E	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:1	SPL2:2	SPL4:1	SPLC1	SPLC4	SPLC7		Well ID
+						2.5	3.7	2.5					Conc/Dil
+F	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:2	SPL3:1	SPL4:2	SPLC2	SPLC5	SPLC8		Well ID
+						3.7	2.5	3.7					Conc/Dil
+G						SPL2:1	SPL3:2	SPL5	SPLC3	SPLC6	SPLC9		Well ID
+						2.5	3.7	2.5					Conc/Dil
+H													Well ID
+													Conc/Dil
+
+
+
+Actual Temperature:	29.8
+
+Results
+
+Well ID	Well	Conc/Dil	450	Blank 450	Count	Mean	Std Dev	CV (%)
+BLK	A1		0.102	-0.003	36	-0.000	0.005	-47275498796722128.000
+	B1		0.103	-0.002				
+	C1		0.111	0.006				
+	D1		0.102	-0.003				
+	A2		0.105	0.000				
+	B2		0.104	-0.000				
+	C2		0.110	0.005				
+	D2		0.124	0.019				
+	A3		0.105	-0.000				
+	B3		0.101	-0.003				
+	C3		0.101	-0.004				
+	D3		0.105	0.001				
+	A4		0.106	0.001				
+	B4		0.102	-0.003				
+	C4		0.109	0.004				
+	D4		0.116	0.011				
+	A5		0.103	-0.002				
+	B5		0.101	-0.004				
+	C5		0.101	-0.003				
+	D5		0.103	-0.002				
+	A6		0.108	0.004				
+	B6		0.104	-0.001				
+	C6		0.099	-0.006				
+	D6		0.103	-0.002				
+	A7		0.107	0.002				
+	B7		0.102	-0.003				
+	C7		0.101	-0.003				
+	D7		0.100	-0.005				
+	A8		0.108	0.003				
+	B8		0.105	0.000				
+	C8		0.103	-0.002				
+	D8		0.103	-0.002				
+	A9		0.108	0.003				
+	B9		0.102	-0.003				
+	C9		0.100	-0.005				
+	D9		0.104	-0.001				
+CTL1	E1		0.102	-0.003	10	0.470	0.762	162.079
+	F1		0.098	-0.007				
+	E2		1.759	1.654				
+	F2		0.101	-0.004				
+	E3		1.672	1.567				
+	F3		0.108	0.004				
+	E4		1.602	1.498				
+	F4		0.103	-0.002				
+	E5		0.100	-0.005				
+	F5		0.103	-0.001				
+SPL1	E6	2.5	1.264	1.160	1	1.160	?????	?????
+	F6	3.7	0.105	0.000	1	0.000	?????	?????
+SPL2	G6	2.5	0.107	0.002	1	0.002	?????	?????
+	E7	3.7	0.106	0.001	1	0.001	?????	?????
+SPL3	F7	2.5	0.442	0.337	1	0.337	?????	?????
+	G7	3.7	0.268	0.163	1	0.163	?????	?????
+SPL4	E8	2.5	0.107	0.002	1	0.002	?????	?????
+	F8	3.7	0.106	0.001	1	0.001	?????	?????
+SPL5	G8	2.5	0.283	0.178	1	0.178	?????	?????
+SPLC1	E9		0.104	-0.001	1	-0.001	?????	?????
+SPLC2	F9		0.103	-0.002	1	-0.002	?????	?????
+SPLC3	G9		0.106	0.001	1	0.001	?????	?????
+SPLC4	E10		0.110	0.006	1	0.006	?????	?????
+SPLC5	F10		0.101	-0.004	1	-0.004	?????	?????
+SPLC6	G10		0.110	0.005	1	0.005	?????	?????
+SPLC7	E11		0.108	0.003	1	0.003	?????	?????
+SPLC8	F11		0.103	-0.002	1	-0.002	?????	?????
+SPLC9	G11		0.102	-0.002	1	-0.002	?????	?????
+STD1	A10	3.53	0.102	-0.002	6	0.002	0.005	243.986
+	B10	3.53	0.112	0.007				
+	C10	3.53	0.102	-0.002				
+	A11	3.53	0.104	-0.000				
+	B11	3.53	0.106	0.001				
+	C11	3.53	0.114	0.009				
+

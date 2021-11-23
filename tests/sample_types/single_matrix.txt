@@ -1,0 +1,66 @@
+
+
+Software Version	3.03.14
+
+
+
+Experiment File Path:	C:\foo.xpt
+Protocol File Path:	
+
+
+
+Plate Number	Plate 1
+Date	2021-11-16
+Time	14:16:33
+Reader Type:	Synergy H1
+Reader Serial Number:	14112519
+Reading Type	Reader
+
+Procedure Details
+
+foo
+bar
+quz
+
+Layout
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+B	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+C	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+D	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK				Well ID
+													Conc/Dil
+E	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:1	SPL2:2	SPL4:1	SPLC1	SPLC4	SPLC7		Well ID
+						2.5	3.7	2.5					Conc/Dil
+F	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:2	SPL3:1	SPL4:2	SPLC2	SPLC5	SPLC8		Well ID
+						3.7	2.5	3.7					Conc/Dil
+G						SPL2:1	SPL3:2	SPL5	SPLC3	SPLC6	SPLC9		Well ID
+						2.5	3.7	2.5					Conc/Dil
+H													Well ID
+													Conc/Dil
+
+
+
+Actual Temperature:	29.8
+
+Results
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	0.102	0.105	0.105	0.106	0.103	0.108	0.107	0.108	0.108	0.102	0.104		450
+	-0.003	0.000	-0.000	0.001	-0.002	0.004	0.002	0.003	0.003	-0.002	-0.000		Blank 450
+B	0.103	0.104	0.101	0.102	0.101	0.104	0.102	0.105	0.102	0.112	0.106		450
+	-0.002	-0.000	-0.003	-0.003	-0.004	-0.001	-0.003	0.000	-0.003	0.007	0.001		Blank 450
+C	0.111	0.110	0.101	0.109	0.101	0.099	0.101	0.103	0.100	0.102	0.114		450
+	0.006	0.005	-0.004	0.004	-0.003	-0.006	-0.003	-0.002	-0.005	-0.002	0.009		Blank 450
+D	0.102	0.124	0.105	0.116	0.103	0.103	0.100	0.103	0.104				450
+	-0.003	0.019	0.001	0.011	-0.002	-0.002	-0.005	-0.002	-0.001				Blank 450
+E	0.102	1.759	1.672	1.602	0.100	1.264	0.106	0.107	0.104	0.110	0.108		450
+	-0.003	1.654	1.567	1.498	-0.005	1.160	0.001	0.002	-0.001	0.006	0.003		Blank 450
+F	0.098	0.101	0.108	0.103	0.103	0.105	0.442	0.106	0.103	0.101	0.103		450
+	-0.007	-0.004	0.004	-0.002	-0.001	0.000	0.337	0.001	-0.002	-0.004	-0.002		Blank 450
+G						0.107	0.268	0.283	0.106	0.110	0.102		450
+						0.002	0.163	0.178	0.001	0.005	-0.002		Blank 450
+H													450
+													Blank 450
+

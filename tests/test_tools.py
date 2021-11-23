@@ -4,7 +4,7 @@ from synergy_file_reader.tools import (
 		split_well_name,
 		is_sample_label_string, is_sample_id,
 		extract_channel,
-		parse_time, parse_timestamp,
+		parse_time, parse_timestamp, parse_number,
 		LineBuffer,
 	)
 from math import nan, isnan
@@ -125,6 +125,18 @@ def test_extract_bad_channel(string):
 	)
 def test_parse_time(string,seconds):
 	np.testing.assert_equal( parse_time(string), seconds )
+
+@mark.parametrize(
+		"string, number",
+		[
+			( "1"    ,    1),
+			( "2.34" , 2.34),
+			( "-4.2" , -4.2),
+			( "?????",  nan),
+		]
+	)
+def test_parse_number(string,number):
+	np.testing.assert_equal( parse_number(string), number )
 
 @mark.parametrize(
 		"string, number, seconds",

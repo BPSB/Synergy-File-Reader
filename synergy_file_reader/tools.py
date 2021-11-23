@@ -59,6 +59,9 @@ def split_well_name(name):
 	return row,col
 
 def is_sample_label_string(label):
+	if ":" in label:
+		label,_,conc_number = label.partition(":")
+	
 	try:
 		name,number = split_alpha_and_number(label)
 	except ValueError:
@@ -94,7 +97,9 @@ def parse_time(time):
 		return (hours*60+minutes)*60 + seconds
 
 def parse_number(string):
-	if string:
+	if string=="?????":
+		return nan
+	elif string:
 		return float(string)
 	else:
 		return nan

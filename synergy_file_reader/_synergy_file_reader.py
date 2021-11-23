@@ -163,7 +163,7 @@ class SynergyResult(SynergyIndexable):
 	* Row letter, column number, and channel separately: `result["F",7,"OD"]`
 	* Well identifier in one string: `result["F7","OD"]`
 	* If there is only one channel, you do not need to specify it: `result["F7"]`
-	* If your plate contains information on sample IDs, you can also use those for indexing: `result["SPL55","OD"]`
+	* If your plate contains information on sample IDs, you can also use those for indexing: `result["SPL55","OD"]`. If the sample ID is not unique, a list of the respective content of all matching wells will be returned.
 	
 	It comes with the following attributes and methods:
 	
@@ -654,21 +654,25 @@ class SynergyFile(list):
 		format_assert( Well=="Well" )
 		
 		results = []
+		well_id = None
 		for line in line_iter:
 			if line=="": break
+			print(line)
 			
 			if variant=="well_id":
-				well_id,well,*numbers = line.split(self.sep)
+				new_well_id,well,*numbers = line.split(self.sep)
+				well_id = new_well_id or well_id
 				format_assert( well_id == self[-1].layout[well] )
 			elif variant=="well_id_and_conc":
-				well_id,well,conc,*numbers = line.split(self.sep)
+				new_well_id,well,conc,*numbers = line.split(self.sep)
+				well_id = new_well_id or well_id
 				if conc:
-					format_assert( (well_id,conc) == self[-1].layout[well] )
+					format_assert( (well_id,parse_number(conc)) == self[-1].layout[well] )
 				else:
 					format_assert( well_id == self[-1].layout[well] )
 			else:
 				well,*numbers = line.split(self.sep)
-
+			
 			with ValueError_to_FormatMismatch():
 				row,col = split_well_name(well)
 			
@@ -931,7 +935,7 @@ class SynergyFile(list):
 					condils = [ parse_number(condil) for condil in condils ]
 				
 				ids = [
-						label if np.isnan(condil) else (label,condil)
+						label if np.isnan(condil) else (label.partition(":")[0],condil)
 						for label,condil in zip(labels,condils)
 					]
 			else:

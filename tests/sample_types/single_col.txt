@@ -1,0 +1,59 @@
+
+
+Software Version	3.03.14
+
+
+
+Experiment File Path:	C:\foo.xpt
+Protocol File Path:	
+
+
+
+Plate Number	Plate 1
+Date	2021-11-16
+Time	14:16:33
+Reader Type:	Synergy H1
+Reader Serial Number:	14112519
+Reading Type	Reader
+
+Procedure Details
+
+foo
+bar
+quz
+
+Layout
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+B	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+C	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	STD1	STD1		Well ID
+										3.53	3.53		Conc/Dil
+D	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK	BLK				Well ID
+													Conc/Dil
+E	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:1	SPL2:2	SPL4:1	SPLC1	SPLC4	SPLC7		Well ID
+						2.5	3.7	2.5					Conc/Dil
+F	CTL1	CTL1	CTL1	CTL1	CTL1	SPL1:2	SPL3:1	SPL4:2	SPLC2	SPLC5	SPLC8		Well ID
+						3.7	2.5	3.7					Conc/Dil
+G						SPL2:1	SPL3:2	SPL5	SPLC3	SPLC6	SPLC9		Well ID
+						2.5	3.7	2.5					Conc/Dil
+H													Well ID
+													Conc/Dil
+
+
+
+Actual Temperature:	29.8
+
+Results
+
+Well ID	BLK																																				CTL1										SPL1		SPL2		SPL3		SPL4		SPL5	SPLC1	SPLC2	SPLC3	SPLC4	SPLC5	SPLC6	SPLC7	SPLC8	SPLC9	STD1						
+Well	A1	B1	C1	D1	A2	B2	C2	D2	A3	B3	C3	D3	A4	B4	C4	D4	A5	B5	C5	D5	A6	B6	C6	D6	A7	B7	C7	D7	A8	B8	C8	D8	A9	B9	C9	D9	E1	F1	E2	F2	E3	F3	E4	F4	E5	F5	E6	F6	G6	E7	F7	G7	E8	F8	G8	E9	F9	G9	E10	F10	G10	E11	F11	G11	A10	B10	C10	A11	B11	C11	
+Conc/Dil																																															2.5	3.7	2.5	3.7	2.5	3.7	2.5	3.7	2.5										3.53	3.53	3.53	3.53	3.53	3.53	
+450	0.102	0.103	0.111	0.102	0.105	0.104	0.110	0.124	0.105	0.101	0.101	0.105	0.106	0.102	0.109	0.116	0.103	0.101	0.101	0.103	0.108	0.104	0.099	0.103	0.107	0.102	0.101	0.100	0.108	0.105	0.103	0.103	0.108	0.102	0.100	0.104	0.102	0.098	1.759	0.101	1.672	0.108	1.602	0.103	0.100	0.103	1.264	0.105	0.107	0.106	0.442	0.268	0.107	0.106	0.283	0.104	0.103	0.106	0.110	0.101	0.110	0.108	0.103	0.102	0.102	0.112	0.102	0.104	0.106	0.114	
+Blank 450	-0.003	-0.002	0.006	-0.003	0.000	-0.000	0.005	0.019	-0.000	-0.003	-0.004	0.001	0.001	-0.003	0.004	0.011	-0.002	-0.004	-0.003	-0.002	0.004	-0.001	-0.006	-0.002	0.002	-0.003	-0.003	-0.005	0.003	0.000	-0.002	-0.002	0.003	-0.003	-0.005	-0.001	-0.003	-0.007	1.654	-0.004	1.567	0.004	1.498	-0.002	-0.005	-0.001	1.160	0.000	0.002	0.001	0.337	0.163	0.002	0.001	0.178	-0.001	-0.002	0.001	0.006	-0.004	0.005	0.003	-0.002	-0.002	-0.002	0.007	-0.002	-0.000	0.001	0.009	
+Count	36																																				10										1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	6						
+Mean	-0.000																																				0.470										1.160	0.000	0.002	0.001	0.337	0.163	0.002	0.001	0.178	-0.001	-0.002	0.001	0.006	-0.004	0.005	0.003	-0.002	-0.002	0.002						
+Std Dev	0.005																																				0.762										?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	0.005						
+CV (%)	-47275498796722128.000																																				162.079										?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	?????	243.986						
+
