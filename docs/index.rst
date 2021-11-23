@@ -23,6 +23,14 @@ If you already exported your files and did not choose for a minimal format, just
 * Use *tables* and not *matrices* for everything. (The main problem of the latter is that temperature information is lost.)
 * Use *Tab* as a separator. (The other separators will probably work fine, but I am not sure that they do not lead to ambiguities.)
 
+Sample IDs
+----------
+
+Sample IDs are supported for reading files and indexing.
+However, the module discards some information automatically computed from blank data by the Synergy software.
+This is because they are nasty to parse and integrate into the data structure with what I expect to be little usage:
+If you are using this module, I expect that you will want to calculate information like this yourself.
+
 Under the Hood
 --------------
 
