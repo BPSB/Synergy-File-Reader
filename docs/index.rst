@@ -43,6 +43,8 @@ Data Structure
 
 `SynergyFile` is a collection of plates, each of which is a `SynergyPlate`. `SynergyPlate` inherits from `SynergyResult`, which is used for the raw data. The `results` of a `SynergyPlate` are also of the type `SynergyResult`.
 
+`?????` is parsed as `nan` (not a number); while `OVRFLW` is parsed as `inf` (+∞).
+
 Command Reference
 -----------------
 
