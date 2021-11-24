@@ -270,6 +270,10 @@ class SynergyPlate(SynergyResult):
 			self[row,col,channel] = value
 	
 	def _add_result(self,name,row,col,value):
+		if isinstance(name,tuple):
+			self._add_raw_result(name,row,col,value)
+			return
+		
 		try:
 			key,channel = extract_channel(name)
 		except ValueError:
@@ -540,6 +544,7 @@ class SynergyFile(list):
 					self._parse_metadata,
 					self._parse_layout,
 					wrap_variant(self._parse_layout,"conc"),
+					self._parse_spectrum_column,
 					self._parse_blank_data,
 				):
 				try:
@@ -960,6 +965,28 @@ class SynergyFile(list):
 			if line=="": break
 		
 		warn("Data calculated from blanks will be ignored and not parsed.")
-
-
+	
+	def _parse_spectrum_column(self,line_iter):
+		channel,_,spectrum = next(line_iter).partition(":")
+		format_assert( spectrum == "Spectrum" )
+		format_assert( self.sep not in channel )
+		format_assert( next(line_iter) == "" )
+		
+		with ValueError_to_FormatMismatch():
+			Wavelength,*wells = next(line_iter).split(self.sep)
+			wells = [ split_well_name(well) for well in wells ]
+		format_assert( Wavelength == "Wavelength" )
+		
+		results = []
+		for line in line_iter:
+			if line=="": break
+			wavelength,*numbers = line.split(self.sep)
+			with ValueError_to_FormatMismatch():
+				wavelength = int(wavelength)
+				numbers = [ parse_number(number) for number in numbers ]
+			results.append((wavelength,numbers))
+		
+		for wavelength,numbers in results:
+			for (row,col),number in zip(wells,numbers):
+				self[-1]._add_result( (channel,wavelength), row, col, number )
 

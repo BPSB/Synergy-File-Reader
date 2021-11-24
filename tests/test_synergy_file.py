@@ -397,3 +397,28 @@ def test_sample_types_single(filename):
 	assert plate["E3" ,channel] == 1.672
 	assert plate["G11",channel] == 0.102
 
+def test_spectrum():
+	plate = SynergyFile("spectrum.txt",verbose=True)[0]
+	
+	assert plate.metadata["Software Version"] == (3,2,1)
+	assert plate.metadata["Experiment File Path"] == r"C:\foo.xpt"
+	assert plate.metadata["Protocol File Path"] == r"C:\bar.prt"
+	assert plate.metadata["Plate Number"] == "Plate 1"
+	assert plate.metadata["Reader Type"] == "Synergy H1"
+	assert plate.metadata["Reader Serial Number"] == "18092726"
+	assert plate.metadata["Reading Type"] == "Reader"
+	assert plate.metadata["procedure"] == "foo\nbar\nquz"
+	
+	assert plate.metadata["datetime"] == datetime(2021,8,24,11,6,35)
+	
+	channel = "OD_colour"
+	assert plate.rows == list("ABCDEFGH")
+	assert plate.cols == list(range(1,13))
+	
+	assert plate["A1" ,(channel,294)] == 0.900
+	assert plate["B6" ,(channel,550)] == 0.051
+	assert np.isposinf(plate["H12" ,(channel,262)])
+	
+	assert plate["E9" ,"OD600:600"] == 0.073
+	
+
