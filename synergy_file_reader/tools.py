@@ -1,4 +1,4 @@
-from math import nan, isnan
+from math import nan, isnan, inf
 from string import ascii_uppercase
 from numbers import Number
 from warnings import warn
@@ -99,6 +99,8 @@ def parse_time(time):
 def parse_number(string):
 	if string=="?????":
 		return nan
+	elif string=="OVRFLW":
+		return inf
 	elif string:
 		return float(string)
 	else:

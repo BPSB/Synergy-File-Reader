@@ -7,7 +7,7 @@ from synergy_file_reader.tools import (
 		parse_time, parse_timestamp, parse_number,
 		LineBuffer,
 	)
-from math import nan, isnan
+from math import nan, isnan, inf
 import numpy as np
 from pytest import mark, raises
 
@@ -129,10 +129,11 @@ def test_parse_time(string,seconds):
 @mark.parametrize(
 		"string, number",
 		[
-			( "1"    ,    1),
-			( "2.34" , 2.34),
-			( "-4.2" , -4.2),
-			( "?????",  nan),
+			( "1"     ,    1),
+			( "2.34"  , 2.34),
+			( "-4.2"  , -4.2),
+			( "OVRFLW",  inf),
+			( "?????" ,  nan),
 		]
 	)
 def test_parse_number(string,number):
