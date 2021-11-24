@@ -97,14 +97,14 @@ def parse_time(time):
 		return (hours*60+minutes)*60 + seconds
 
 def parse_number(string):
-	if string=="?????":
+	if string=="?????" or string=="":
 		return nan
 	elif string=="OVRFLW":
 		return inf
 	elif string:
 		return float(string)
 	else:
-		return nan
+		raise ValueError
 
 def parse_timestamp(string):
 	if not string.startswith("Time"):
