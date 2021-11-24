@@ -187,7 +187,6 @@ class SynergyResult(SynergyIndexable):
 				if len(self.channels)==1:
 					channel = self.channels[0]
 				else:
-					print(index,residual,self.channels)
 					raise ValueError("You must specify a channel as there is more than one in this read.")
 			elif len(residual)==1:
 				channel = residual[0]
@@ -662,7 +661,6 @@ class SynergyFile(list):
 		well_id = None
 		for line in line_iter:
 			if line=="": break
-			print(line)
 			
 			if variant=="well_id":
 				new_well_id,well,*numbers = line.split(self.sep)
