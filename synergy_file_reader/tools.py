@@ -101,6 +101,9 @@ def parse_number(string):
 		return nan
 	elif string=="OVRFLW":
 		return inf
+	elif string.startswith("<"):
+		float(string[1:])
+		return 0
 	elif string:
 		return float(string)
 	else:

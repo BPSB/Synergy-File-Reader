@@ -134,6 +134,7 @@ def test_parse_time(string,seconds):
 			( "-4.2"  , -4.2),
 			( "OVRFLW",  inf),
 			( "?????" ,  nan),
+			( "<0.001",    0),
 		]
 	)
 def test_parse_number(string,number):

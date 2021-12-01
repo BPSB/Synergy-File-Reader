@@ -88,8 +88,6 @@ class SynergyIndexable(object):
 	
 	def _add_col(self,col):
 		if col not in self.cols:
-			if self.cols:
-				assert col > self.cols[-1]
 			self.cols.append(col)
 	
 	def keys(self):
@@ -265,7 +263,6 @@ class SynergyPlate(SynergyResult):
 			else:
 				self[row,col,channel] = np.array([value])
 		else:
-			assert self.times is None
 			self[row,col,channel] = value
 	
 	def _add_result(self,name,row,col,value):
@@ -529,16 +526,16 @@ class SynergyFile(list):
 					self._parse_raw_data_column,
 					wrap_variant(self._parse_raw_data_column,"blank"),
 					self._parse_results_matrix,
-					self._parse_results_row,
-					wrap_variant(self._parse_results_row,"well_id"),
 					wrap_variant(self._parse_results_row,"well_id_and_conc"),
-					self._parse_results_column,
-					wrap_variant(self._parse_results_column,"well_id"),
+					wrap_variant(self._parse_results_row,"well_id"),
+					self._parse_results_row,
 					wrap_variant(self._parse_results_column,"well_id_and_conc"),
+					wrap_variant(self._parse_results_column,"well_id"),
+					self._parse_results_column,
 					self._parse_single_matrix,
 					self._parse_single_row,
 					self._parse_single_column,
-					self._parse_procedure,
+					self._parse_other_metadata,
 					self._parse_gain_values,
 					self._parse_metadata,
 					self._parse_layout,
@@ -582,15 +579,25 @@ class SynergyFile(list):
 		
 		self[-1]._add_metadata(**new_metadata)
 	
-	def _parse_procedure(self,line_iter):
-		format_assert( next(line_iter) == "Procedure Details" )
+	def _parse_other_metadata(self,line_iter):
+		header = next(line_iter)
+		try:
+			attribute = {
+				"Procedure Details": "procedure",
+				"Curve Fitting Results": "curve_fitting",
+				"DRCurve Fitting Results": "dr_curve_fitting",
+				"DRCurve Interpolations": "dr_curve_interpolations",
+			}[header]
+		except KeyError:
+			raise FormatMismatch
+		
 		format_assert( next(line_iter) == "" )
 		
-		procedure = []
+		content = []
 		for line in line_iter:
 			if line=="": break
-			procedure.append(line.replace(self.sep,"\t"))
-		self[-1]._add_metadata( procedure = "\n".join(procedure) )
+			content.append(line.replace(self.sep,"\t"))
+		self[-1]._add_metadata( **{attribute: "\n".join(content)} )
 	
 	def _parse_gain_values(self,line_iter):
 		format_assert( next(line_iter) == "Automatic gain values\t " )
@@ -715,9 +722,9 @@ class SynergyFile(list):
 		for line in line_iter:
 			if line=="": break
 			name,*numbers,last = line.split(self.sep)
+			format_assert( name != "Conc/Dil" )
 			format_assert( len(wells) == len(numbers) )
 			format_assert( last == "" )
-			
 			for attempt in TryFormats():
 				with attempt as format_parser:
 					numbers = [ format_parser(number) for number in numbers ]
@@ -783,7 +790,7 @@ class SynergyFile(list):
 		else:
 			with ValueError_to_FormatMismatch():
 				label,*temperatures,last = next(line_iter).split(self.sep)
-				temperatures = [ float(temperature) for temperature in temperatures ]
+				temperatures = [ parse_number(temperature) for temperature in temperatures ]
 			format_assert( last == "" )
 				
 			assert_temperature_label(label,channel)
@@ -796,6 +803,7 @@ class SynergyFile(list):
 			with ValueError_to_FormatMismatch():
 				well,*numbers,last = line.split(self.sep)
 				numbers = [ parse_number(number) for number in numbers ]
+				split_well_name(well)
 			format_assert( last == "" )
 			format_assert( len(numbers) == len(times) )
 			wells.append(well)
