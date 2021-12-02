@@ -82,8 +82,6 @@ class SynergyIndexable(object):
 	
 	def _add_row(self,row):
 		if row not in self.rows:
-			if self.rows:
-				assert len(row)>len(self.rows[-1]) or row>self.rows[-1]
 			self.rows.append(row)
 	
 	def _add_col(self,col):
