@@ -1,10 +1,12 @@
-from synergy_file_reader import SynergyFile
+from synergy_file_reader import SynergyFile, IGNORED_CHANNELS
 from datetime import datetime
 from pytest import mark
 from os import path
 import numpy as np
 
-pytestmark = mark.filterwarnings("ignore:Data.*blanks")
+pytestmark = mark.filterwarnings(
+		"ignore:.*will be ignored and not parsed",
+	)
 
 @mark.parametrize(
 		  "filename,       temperature_ts",
@@ -319,6 +321,7 @@ def test_sample_types_noconc(filename):
 	
 	channel = "OD:600"
 	assert channel in plate.channels
+	assert IGNORED_CHANNELS.isdisjoint(plate.channels)
 	assert plate.rows == list("ABCDEFGH")
 	assert plate.cols == list(range(1,13))
 	

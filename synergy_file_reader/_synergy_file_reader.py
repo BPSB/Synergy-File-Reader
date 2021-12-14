@@ -18,6 +18,8 @@ timescales = {
 		"days"   : 24*60*60,
 	}
 
+IGNORED_CHANNELS = { "Count", "Mean", "Std Dev", "CV (%)" }
+
 class FormatMismatch(Exception): pass
 class RepeatingData(Exception): pass
 
@@ -192,9 +194,12 @@ class SynergyResult(SynergyIndexable):
 			yield row,col,channel
 	
 	def __setitem__(self,index,result):
-		super().__setitem__(index,result)
-		_,_,channel = next(self._convert_indices(index))
-		self._add_channel(channel)
+		if index[-1] not in IGNORED_CHANNELS:
+			super().__setitem__(index,result)
+			_,_,channel = next(self._convert_indices(index))
+			self._add_channel(channel)
+		else:
+			warn(f"Columns/rows, etc. headed with any of {IGNORED_CHANNELS} will be ignored and not parsed.")
 
 class SynergyPlate(SynergyResult):
 	"""
@@ -269,7 +274,7 @@ class SynergyPlate(SynergyResult):
 			return
 		
 		try:
-			key,channel = extract_channel(name)
+			key,channel = extract_channel(name,self.channels)
 		except ValueError:
 			self._add_raw_result(name,row,col,value)
 			return

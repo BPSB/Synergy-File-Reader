@@ -81,12 +81,25 @@ def is_sample_id(index):
 		else:
 			return is_sample_label_string(index[0]) and isinstance(index[1],Number)
 
-def extract_channel(string):
+def extract_channel(string,existing_channels):
 	name,_,channel = string.partition("[")
 	if not channel or channel[-1] != "]":
 		raise ValueError
 	channel = channel[:-1]
 	name = name.rstrip()
+	
+	if channel.endswith(":Spectrum"):
+		channel = channel.partition(":Spectrum")[0]
+	
+	for ex_channel in existing_channels:
+		if (
+				   (channel==ex_channel)
+				or (isinstance(ex_channel,tuple) and channel==ex_channel[0])
+			):
+			break
+	else:
+		raise ValueError
+	
 	return name,channel
 
 def parse_time(time):

@@ -97,6 +97,7 @@ def test_is_sample_label_string(label,result):
 def test_is_sample_id(label,result):
 	assert is_sample_id(label) == result
 
+existing_channels = ["OD:600","YFP","CFP"]
 @mark.parametrize(
 		"string, name, channel",
 		[
@@ -106,12 +107,19 @@ def test_is_sample_id(label,result):
 		]
 	)
 def test_extract_channel(string,name,channel):
-	assert extract_channel(string) == (name,channel)
+	assert extract_channel(string,existing_channels) == (name,channel)
 
-@mark.parametrize("string",["Max V [OD:600","abc"])
-def test_extract_bad_channel(string):
+@mark.parametrize(
+		"string, existing_channels",
+		[
+			( "Max V [OD:600", existing_channels ),
+			( "abc"          , existing_channels ),
+			( "Lagtime [YFP]", ["OD:600"]        ),
+		]
+	)
+def test_extract_bad_channel(string,existing_channels):
 	with raises(ValueError):
-		extract_channel(string)
+		extract_channel(string,existing_channels)
 
 @mark.parametrize(
 		"string, seconds",
