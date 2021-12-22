@@ -20,10 +20,18 @@ def row_iter(exhaust_warning=True):
 
 VALID_ROWS = set(row_iter(exhaust_warning=False))
 
+def isascii(s):
+    try:
+        s.encode('ascii')
+    except UnicodeEncodeError:
+        return False
+    else:
+        return True
+
 def split_alpha_and_number(name):
 	if name=="":
 		raise ValueError("Empty name.")
-	elif not name.isascii():
+	elif not isascii(name):
 		raise ValueError("Not an ASCII name")
 	
 	for i in range(len(name)+1):
