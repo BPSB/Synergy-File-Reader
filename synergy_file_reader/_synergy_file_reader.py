@@ -418,7 +418,8 @@ class SynergyPlate(SynergyResult):
 			colours = [ None for channel in channels ]
 		
 		if timescale is None:
-			t_max = self.times[-1] if xlim is None else xlim[1]
+			max_time = max(self.times[channel][-1] for channel in channels)
+			t_max = max_time if xlim is None else xlim[1]
 			candidates = ( ts for ts in timescales if 2*timescales[ts]<t_max )
 			timescale = max( candidates, key = lambda ts: timescales[ts] )
 		
