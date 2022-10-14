@@ -46,7 +46,7 @@ The `my_plate.metadata` is a dictionary, which contains all sorts of tangential 
 	:dedent: 1
 	:lines: 12
 
-However, what we usually care about is the rare data. For each well and channel, this is stored in a NumPy array. We can access it by directly indexing `my_plate`. The following commands are all equivalent, with the last only working because we only have one channel:
+However, what we usually care about is the raw data. For each well and channel, this is stored in a NumPy array. We can access it by directly indexing `my_plate`. The following commands are all equivalent, with the last only working because we only have one channel:
 
 .. literalinclude:: ../examples/example.py
 	:start-after: example-st\u0061rt
