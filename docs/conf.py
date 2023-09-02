@@ -1,11 +1,9 @@
 import sys
 import os
 from setuptools_scm import get_version
-from unittest.mock import MagicMock as Mock
 
 # Mocking to make RTD autobuild the documentation.
 autodoc_mock_imports = ['numpy']
-#sys.modules.update([("numpy", Mock())])
 sys.path.insert(0,os.path.abspath("../synergy_file_reader"))
 sys.path.insert(0,os.path.abspath("../examples"))
 
