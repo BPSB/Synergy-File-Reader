@@ -82,6 +82,17 @@ class SynergyIndexable(object):
 		self.cols = []
 		self.sample_ids = sample_ids
 	
+	def flip(self):
+		"""
+		Reassigns the indices as if the plate were rotated by π, i.e., 180° – if you somehow put the plate into the reader in the wrong orientation.
+		"""
+		flip_row = { row:new_row for row,new_row in zip(self.rows,reversed(self.rows)) }
+		flip_col = { col:new_col for col,new_col in zip(self.cols,reversed(self.cols)) }
+		self.data = {
+				( flip_row[row], flip_col[col], *rest ) : value
+				for (row, col, *rest),value in self.data.items()
+			}
+	
 	def _add_row(self,row):
 		if row not in self.rows:
 			self.rows.append(row)
@@ -349,6 +360,14 @@ class SynergyPlate(SynergyResult):
 	
 	def __repr__(self):
 		return(f"SynergyPlate( {self.metadata}, {self.times}, {self.temperatures}, {self.data}, {self.results} )")
+	
+	def flip(self):
+		"""
+		Reassigns the indices as if the plate were rotated by π, i.e., 180° – if you somehow put the plate into the reader in the wrong orientation.
+		"""
+		super().flip()
+		for result in self.results.values():
+			result.flip()
 	
 	def plot(self, *,
 			channels=None, colours=None,

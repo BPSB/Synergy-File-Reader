@@ -64,6 +64,15 @@ def test_time_series(filename,temperature_ts):
 	assert plate.results["Max V"]["D",2,"OD:600"] == -0.060
 	assert plate.results["t at Max V"]["H11","OD:600"] == 5050
 	assert plate.results["t at Max V"]["H11"] == 5050
+	
+	plate.flip()
+	assert plate["F1" ] [2] == 0.088
+	assert plate["H12"][ 0] == 0.093
+	assert plate["A1" ][-1] == 0.099
+	
+	assert plate.results["Max V"]["E11","OD:600"] == -0.060
+	assert plate.results["t at Max V"]["A2","OD:600"] == 5050
+	assert plate.results["t at Max V"]["A2"] == 5050
 
 
 @mark.parametrize(
