@@ -168,7 +168,7 @@ class SynergyResult(SynergyIndexable):
 	* `rows` and `cols` are lists of the row letters and column numbers, respectively.
 	* `channels` is a list of all channels for which recordings exists.
 	* `keys` and `values` are methods similar to those for dictionaries, returning iterables of all keys and values respectively.
-	* If your plate contains information on sample IDs, `sample_ids` contains the mappin of sample IDs to wells.
+	* If your plate contains information on sample IDs, `sample_ids` contains the mapping of sample IDs to wells.
 	"""
 	
 	def __init__(self,sample_ids=None):
