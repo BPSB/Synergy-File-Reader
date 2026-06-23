@@ -809,7 +809,7 @@ class SynergyFile(list):
 			times = [ parse_time(time) for time in times ]
 		
 		if variant == "blank":
-			temperatures = np.full_like(times,np.nan)
+			temperatures = np.full_like(times,np.nan,dtype=float)
 		else:
 			with ValueError_to_FormatMismatch():
 				label,*temperatures,last = next(line_iter).split(self.sep)
