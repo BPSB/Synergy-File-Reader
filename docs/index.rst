@@ -27,7 +27,7 @@ Sample IDs
 ----------
 
 Sample IDs are supported for reading files and indexing.
-However, the module discards some information automatically computed from blank data by the Synergy software.
+However, the module discards some information automatically computed from raw data by the Synergy software.
 This is because they are nasty to parse and integrate into the data structure with what I expect to be little usage:
 If you are using this module, I expect that you will want to calculate information like this yourself.
 
